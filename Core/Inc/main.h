@@ -65,6 +65,12 @@ void Error_Handler(void);
 #define BUSY_GPIO_Port GPIOA
 #define CS_Pin GPIO_PIN_3
 #define CS_GPIO_Port GPIOA
+#define BATTERY_Pin GPIO_PIN_1
+#define BATTERY_GPIO_Port GPIOB
+#define POWER_Pin GPIO_PIN_14
+#define POWER_GPIO_Port GPIOB
+#define POWER_LED_Pin GPIO_PIN_6
+#define POWER_LED_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 
