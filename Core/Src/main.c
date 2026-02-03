@@ -127,6 +127,35 @@ int8_t Bme280Init() {
 
     return rslt;
 }
+
+void EnterStopMode(void)
+{
+    // Отключаем SysTick, чтобы он не мешал
+    HAL_SuspendTick();
+
+    // Чистим флаги пробуждения
+    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+
+    // Входим в STOP
+    HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
+
+    // ==== МК ПРОСНУЛСЯ ЗДЕСЬ ====
+
+    // Восстанавливаем тактирование
+    SystemClock_Config();
+
+    // Возвращаем SysTick
+    HAL_ResumeTick();
+
+    epd_init_partial();
+    epd_paint_selectimage(image_bw);
+    epd_paint_clear(EPD_COLOR_WHITE);
+}
+
+void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
+{
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -241,7 +270,11 @@ int main(void)
 
         epd_displayBW_partial(image_bw);
 
-        HAL_Delay(1000);
+        epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
+
+        EnterStopMode();
+
+        // HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
