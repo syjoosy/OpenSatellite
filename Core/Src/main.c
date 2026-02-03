@@ -147,15 +147,20 @@ void EnterStopMode(void)
     // Возвращаем SysTick
     HAL_ResumeTick();
 
-    epd_init_partial();
+    // epd_init_partial();
+    epd_init();
     epd_paint_selectimage(image_bw);
     epd_paint_clear(EPD_COLOR_WHITE);
+    // epd_displayBW_partial(image_bw);
 }
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
 
 }
+
+RTC_TimeTypeDef time;
+RTC_DateTypeDef date;
 /* USER CODE END 0 */
 
 /**
@@ -237,6 +242,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
+        HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+
+
+        char time_string[100];
+        char date_string[100];
+        char week_string[100];
+
+        sprintf(time_string, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
+	      epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+
+        sprintf(date_string, "Date: %02d/%02d/%02d", date.Date, date.Month, date.Year);
+        epd_paint_showString(1, 20, (uint8_t *)date_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+
+        sprintf(week_string, "Day: %02d", date.WeekDay);
+        epd_paint_showString(1, 40, (uint8_t *)week_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+
         /* Forced mode setting, switched to SLEEP mode after measurement */
         rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
         dev.delay_ms(40);
@@ -257,9 +279,9 @@ int main(void)
             sprintf(temp_string, "Temperature %03.1f C", temperature);
             sprintf(press_string, "Pressure %03.1f mm", pressure);
 
-            epd_paint_showString(10, 120, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-            epd_paint_showString(10, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-            epd_paint_showString(10, 160, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+            epd_paint_showString(1, 120, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+            epd_paint_showString(1, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+            epd_paint_showString(1, 160, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
 
             bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev);
         }
@@ -268,7 +290,8 @@ int main(void)
             epd_paint_showString(10, 180, "BME280 ERROR!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
         }
 
-        epd_displayBW_partial(image_bw);
+        // epd_displayBW_partial(image_bw);
+        epd_displayBW(image_bw);
 
         epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
 
