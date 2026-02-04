@@ -112,9 +112,10 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     /**ADC1 GPIO Configuration
     PB1     ------> ADC1_IN12
+    PB12     ------> ADC1_IN11
     PB14     ------> ADC1_IN5
     */
-    GPIO_InitStruct.Pin = BATTERY_Pin|POWER_Pin;
+    GPIO_InitStruct.Pin = BATTERY_Pin|RTC_BATTERY_Pin|POWER_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -144,9 +145,10 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 
     /**ADC1 GPIO Configuration
     PB1     ------> ADC1_IN12
+    PB12     ------> ADC1_IN11
     PB14     ------> ADC1_IN5
     */
-    HAL_GPIO_DeInit(GPIOB, BATTERY_Pin|POWER_Pin);
+    HAL_GPIO_DeInit(GPIOB, BATTERY_Pin|RTC_BATTERY_Pin|POWER_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 

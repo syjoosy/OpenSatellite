@@ -67,6 +67,8 @@ void Error_Handler(void);
 #define CS_GPIO_Port GPIOA
 #define BATTERY_Pin GPIO_PIN_1
 #define BATTERY_GPIO_Port GPIOB
+#define RTC_BATTERY_Pin GPIO_PIN_12
+#define RTC_BATTERY_GPIO_Port GPIOB
 #define POWER_Pin GPIO_PIN_14
 #define POWER_GPIO_Port GPIOB
 #define POWER_LED_Pin GPIO_PIN_6
