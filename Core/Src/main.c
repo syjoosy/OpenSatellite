@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define EINK_PARTIAL 0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -82,107 +82,140 @@ char press_string[50];
 
 int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
-    if (HAL_I2C_Master_Transmit(&hi2c1, (id << 1), &reg_addr, 1, 10) != HAL_OK)
-        return -1;
-    if (HAL_I2C_Master_Receive(&hi2c1, (id << 1) | 0x01, data, len, 10) != HAL_OK)
-        return -1;
+  if (HAL_I2C_Master_Transmit(&hi2c1, (id << 1), &reg_addr, 1, 10) != HAL_OK)
+    return -1;
+  if (HAL_I2C_Master_Receive(&hi2c1, (id << 1) | 0x01, data, len, 10) != HAL_OK)
+    return -1;
 
-    return 0;
+  return 0;
 }
 
 void user_delay_ms(uint32_t period)
 {
-    HAL_Delay(period);
+  HAL_Delay(period);
 }
 
 int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
-    int8_t *buf;
-    buf = malloc(len + 1);
-    buf[0] = reg_addr;
-    memcpy(buf + 1, data, len);
+  int8_t *buf;
+  buf = malloc(len + 1);
+  buf[0] = reg_addr;
+  memcpy(buf + 1, data, len);
 
-    if (HAL_I2C_Master_Transmit(&hi2c1, (id << 1), (uint8_t *)buf, len + 1, HAL_MAX_DELAY) != HAL_OK)
-        return -1;
+  if (HAL_I2C_Master_Transmit(&hi2c1, (id << 1), (uint8_t *)buf, len + 1, HAL_MAX_DELAY) != HAL_OK)
+    return -1;
 
-    free(buf);
-    return 0;
+  free(buf);
+  return 0;
 }
 
-int8_t Bme280Init() {
-    dev.dev_id = BME280_I2C_ADDR_PRIM;
-    dev.intf = BME280_I2C_INTF;
-    dev.read = user_i2c_read;
-    dev.write = user_i2c_write;
-    dev.delay_ms = user_delay_ms;
+int8_t Bme280Init()
+{
+  dev.dev_id = BME280_I2C_ADDR_PRIM;
+  dev.intf = BME280_I2C_INTF;
+  dev.read = user_i2c_read;
+  dev.write = user_i2c_write;
+  dev.delay_ms = user_delay_ms;
 
-    rslt = bme280_init(&dev);
+  rslt = bme280_init(&dev);
 
-    /* BME280 settings */
-    dev.settings.osr_h = BME280_OVERSAMPLING_1X;
-    dev.settings.osr_p = BME280_OVERSAMPLING_16X;
-    dev.settings.osr_t = BME280_OVERSAMPLING_2X;
-    dev.settings.filter = BME280_FILTER_COEFF_16;
-    rslt = bme280_set_sensor_settings(BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL, &dev);
+  /* BME280 settings */
+  dev.settings.osr_h = BME280_OVERSAMPLING_1X;
+  dev.settings.osr_p = BME280_OVERSAMPLING_16X;
+  dev.settings.osr_t = BME280_OVERSAMPLING_2X;
+  dev.settings.filter = BME280_FILTER_COEFF_16;
+  rslt = bme280_set_sensor_settings(BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL, &dev);
 
-    return rslt;
+  return rslt;
 }
 
 void EnterStopMode(void)
 {
-    // Отключаем SysTick, чтобы он не мешал
-    HAL_SuspendTick();
+  // Отключаем SysTick, чтобы он не мешал
+  HAL_SuspendTick();
 
-    // Чистим флаги пробуждения
-    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+  // Чистим флаги пробуждения
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
-    // Входим в STOP
-    HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
+  // Входим в STOP
+  HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
 
-    // ==== МК ПРОСНУЛСЯ ЗДЕСЬ ====
+  // ==== МК ПРОСНУЛСЯ ЗДЕСЬ ====
 
-    // Восстанавливаем тактирование
-    SystemClock_Config();
+  // Восстанавливаем тактирование
+  SystemClock_Config();
 
-    // Возвращаем SysTick
-    HAL_ResumeTick();
+  // Возвращаем SysTick
+  HAL_ResumeTick();
 
-    // epd_init_partial();
+  #if EINK_PARTIAL == 1
+    epd_init_partial();
+  #else
     epd_init();
-    epd_paint_selectimage(image_bw);
-    epd_paint_clear(EPD_COLOR_WHITE);
-    // epd_displayBW_partial(image_bw);
+  #endif
+  epd_paint_selectimage(image_bw);
+  epd_paint_clear(EPD_COLOR_WHITE);
+
+  #if EINK_PARTIAL == 1
+    epd_displayBW_partial(image_bw);
+  #endif
 }
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
-
 }
 
-RTC_TimeTypeDef time;
-RTC_DateTypeDef date;
-
-void Read_ADC2_Channels(void)
+void ReadADC(void)
 {
-    HAL_ADC_Start(&hadc1);
+  HAL_ADC_Start(&hadc1);
 
-    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-    uint32_t power_adc = HAL_ADC_GetValue(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  uint32_t power_adc = HAL_ADC_GetValue(&hadc1);
 
-    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-    uint32_t rtc_adc = HAL_ADC_GetValue(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  uint32_t rtc_adc = HAL_ADC_GetValue(&hadc1);
 
-    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-    uint32_t battery_adc = HAL_ADC_GetValue(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  uint32_t battery_adc = HAL_ADC_GetValue(&hadc1);
 
-    HAL_ADC_Stop(&hadc1);
+  HAL_ADC_Stop(&hadc1);
+}
+
+RTC_DateTypeDef GetDate()
+{
+  RTC_DateTypeDef date;
+  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+  return date;
+}
+
+RTC_TimeTypeDef GetTime()
+{
+  RTC_TimeTypeDef time;
+  HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+  return time;
+}
+
+void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
+{
+  char time_string[100];
+  char date_string[100];
+  char week_string[100];
+
+  sprintf(time_string, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
+  epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+
+  sprintf(date_string, "Date: %02d/%02d/%02d", date.Date, date.Month, date.Year);
+  epd_paint_showString(1, 20, (uint8_t *)date_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+
+  sprintf(week_string, "Day: %02d", date.WeekDay);
+  epd_paint_showString(1, 40, (uint8_t *)week_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
 }
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -196,7 +229,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-    float version = 0.1f;
+  float version = 0.1f;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -214,130 +247,119 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
 
-    epd_init();
-    epd_paint_newimage(image_bw, EPD_W, EPD_H, EPD_ROTATE_180, EPD_COLOR_WHITE);
-    epd_paint_selectimage(image_bw);
-    epd_paint_clear(EPD_COLOR_WHITE);
-    epd_displayBW(image_bw);
+  epd_init();
+  epd_paint_newimage(image_bw, EPD_W, EPD_H, EPD_ROTATE_180, EPD_COLOR_WHITE);
+  epd_paint_selectimage(image_bw);
+  epd_paint_clear(EPD_COLOR_WHITE);
+  epd_displayBW(image_bw);
 
-    epd_init_partial();
-    epd_paint_selectimage(image_bw);
-    epd_paint_clear(EPD_COLOR_WHITE);
-    
-    char version_string[50];
-    memset(version_string, 0, sizeof(version_string));
-    sprintf(version_string, "OpenSatellite v%0.1f", version);
-    epd_paint_showString(1, 0, (uint8_t *)&version_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    epd_displayBW_partial(image_bw);
-    
-    int8_t bmeInitResult = Bme280Init();
-    if (bmeInitResult == 0)
-    {
-      epd_paint_showString(1, 20, (uint8_t *)&"BME280: OK", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    }
-    else
-    {
-      epd_paint_showString(1, 20, (uint8_t *)&"BME280: ERROR", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    }
-    epd_displayBW_partial(image_bw);
+  epd_init_partial();
+  epd_paint_selectimage(image_bw);
+  epd_paint_clear(EPD_COLOR_WHITE);
 
+  char version_string[50];
+  memset(version_string, 0, sizeof(version_string));
+  sprintf(version_string, "OpenSatellite v%0.1f", version);
+  epd_paint_showString(1, 0, (uint8_t *)&version_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_displayBW_partial(image_bw);
 
-    epd_paint_showString(1, 140, (uint8_t *)&"Designed by", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    epd_paint_showString(1, 160, (uint8_t *)&"Vadim 'syjoosy' Nikolaev [LCT]", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    epd_displayBW_partial(image_bw);
+  int8_t bmeInitResult = Bme280Init();
+  if (bmeInitResult == 0)
+  {
+    epd_paint_showString(1, 20, (uint8_t *)&"BME280: OK", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  }
+  else
+  {
+    epd_paint_showString(1, 20, (uint8_t *)&"BME280: ERROR", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  }
+  epd_displayBW_partial(image_bw);
 
-    epd_paint_showString(1, 180, (uint8_t *)&"Starting satellite!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    epd_displayBW_partial(image_bw);
+  epd_paint_showString(1, 140, (uint8_t *)&"Designed by", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(1, 160, (uint8_t *)&"Vadim 'syjoosy' Nikolaev [LCT]", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_displayBW_partial(image_bw);
 
-    HAL_Delay(1000);
-    epd_paint_clear(EPD_COLOR_WHITE);
-    epd_displayBW_partial(image_bw);
+  epd_paint_showString(1, 180, (uint8_t *)&"Starting satellite!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_displayBW_partial(image_bw);
+
+  HAL_Delay(1000);
+  epd_paint_clear(EPD_COLOR_WHITE);
+  epd_displayBW_partial(image_bw);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    while (1)
+  while (1)
+  {
+    RTC_TimeTypeDef time = GetTime();
+    RTC_DateTypeDef date = GetDate();
+    DrawDateTime(date, time);
+
+    ReadADC();
+
+    /* Forced mode setting, switched to SLEEP mode after measurement */
+    rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
+    dev.delay_ms(40);
+    /*Get Data */
+    rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
+    if (rslt == BME280_OK)
     {
-        HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-        HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+      temperature = comp_data.temperature / 100.0;
+      humidity = comp_data.humidity / 1024.0;
+      pressure = comp_data.pressure / 10000.0 * 0.75;
 
+      /*Display Data */
+      memset(hum_string, 0, sizeof(hum_string));
+      memset(temp_string, 0, sizeof(temp_string));
+      memset(press_string, 0, sizeof(press_string));
 
-        char time_string[100];
-        char date_string[100];
-        char week_string[100];
+      sprintf(hum_string, "Humidity %03.1f %%", humidity);
+      sprintf(temp_string, "Temperature %03.1f C", temperature);
+      sprintf(press_string, "Pressure %03.1f mm", pressure);
 
-        sprintf(time_string, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
-	      epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+      epd_paint_showString(1, 120, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+      epd_paint_showString(1, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+      epd_paint_showString(1, 160, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
 
-        sprintf(date_string, "Date: %02d/%02d/%02d", date.Date, date.Month, date.Year);
-        epd_paint_showString(1, 20, (uint8_t *)date_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+      bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev);
+    }
+    else
+    {
+      epd_paint_showString(10, 180, "BME280 ERROR!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+    }
 
-        sprintf(week_string, "Day: %02d", date.WeekDay);
-        epd_paint_showString(1, 40, (uint8_t *)week_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+    #if EINK_PARTIAL == 1
+      epd_displayBW_partial(image_bw);
+    #else 
+      epd_displayBW(image_bw);
+    #endif
+    
+    epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
 
-        /* Forced mode setting, switched to SLEEP mode after measurement */
-        rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
-        dev.delay_ms(40);
-        /*Get Data */
-        rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
-        if (rslt == BME280_OK)
-        {
-            temperature = comp_data.temperature / 100.0;
-            humidity = comp_data.humidity / 1024.0;
-            pressure = comp_data.pressure / 10000.0 * 0.75;
-
-            /*Display Data */
-            memset(hum_string, 0, sizeof(hum_string));
-            memset(temp_string, 0, sizeof(temp_string));
-            memset(press_string, 0, sizeof(press_string));
-
-            sprintf(hum_string, "Humidity %03.1f %%", humidity);
-            sprintf(temp_string, "Temperature %03.1f C", temperature);
-            sprintf(press_string, "Pressure %03.1f mm", pressure);
-
-            epd_paint_showString(1, 120, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-            epd_paint_showString(1, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-            epd_paint_showString(1, 160, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-
-            bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev);
-        }
-        else
-        {
-            epd_paint_showString(10, 180, "BME280 ERROR!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-        }
-
-        // epd_displayBW_partial(image_bw);
-        epd_displayBW(image_bw);
-
-        epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
-
-        EnterStopMode();
-
-        // HAL_Delay(1000);
+    EnterStopMode();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    }
+  }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+   * in the RCC_OscInitTypeDef structure.
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
@@ -347,9 +369,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -362,10 +383,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief ADC1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_ADC1_Init(void)
 {
 
@@ -381,7 +402,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 1 */
 
   /** Common config
-  */
+   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
@@ -404,7 +425,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure the ADC multi-mode
-  */
+   */
   multimode.Mode = ADC_MODE_INDEPENDENT;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
@@ -412,7 +433,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
@@ -425,7 +446,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -434,7 +455,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_12;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -444,14 +465,13 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
-
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_I2C1_Init(void)
 {
 
@@ -477,14 +497,14 @@ static void MX_I2C1_Init(void)
   }
 
   /** Configure Analogue filter
-  */
+   */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure Digital filter
-  */
+   */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
   {
     Error_Handler();
@@ -492,14 +512,13 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief RTC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_RTC_Init(void)
 {
 
@@ -515,7 +534,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
-  */
+   */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
   hrtc.Init.AsynchPrediv = 127;
@@ -535,7 +554,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
-  */
+   */
   sTime.Hours = 0x0;
   sTime.Minutes = 0x0;
   sTime.Seconds = 0x0;
@@ -557,7 +576,7 @@ static void MX_RTC_Init(void)
   }
 
   /** Enable the WakeUp
-  */
+   */
   if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 29, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK)
   {
     Error_Handler();
@@ -565,14 +584,13 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */
-
 }
 
 /**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI1_Init(void)
 {
 
@@ -605,19 +623,18 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -626,13 +643,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RST_Pin|DC_Pin|CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, RST_Pin | DC_Pin | CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(POWER_LED_GPIO_Port, POWER_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : RST_Pin DC_Pin CS_Pin */
-  GPIO_InitStruct.Pin = RST_Pin|DC_Pin|CS_Pin;
+  GPIO_InitStruct.Pin = RST_Pin | DC_Pin | CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -651,8 +668,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(POWER_LED_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -660,33 +677,33 @@ static void MX_GPIO_Init(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
-    __disable_irq();
-    while (1)
-    {
-    }
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-    /* User can add his own implementation to report the file name and line number,
-       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  /* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
