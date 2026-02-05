@@ -68,17 +68,33 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float temperature;
-float humidity;
-float pressure;
 
 struct bme280_dev dev;
 struct bme280_data comp_data;
 int8_t rslt;
 
-char hum_string[50];
-char temp_string[50];
-char press_string[50];
+typedef struct
+{
+  float temperature;
+  float humidity;
+  float pressure;
+  int8_t connectionOk;
+} bmeData_t;
+
+typedef struct
+{
+  uint32_t batteryAdc;
+  uint32_t rtcAdc;
+  uint32_t powerAdc;
+} adcData_t;
+
+typedef struct
+{
+  float batteryVoltage;
+  float rtcVoltage;
+  float powerVoltage;
+} voltageData_t;
+
 
 int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
@@ -148,37 +164,40 @@ void EnterStopMode(void)
   // Возвращаем SysTick
   HAL_ResumeTick();
 
-  #if EINK_PARTIAL == 1
-    epd_init_partial();
-  #else
-    epd_init();
-  #endif
+#if EINK_PARTIAL == 1
+  epd_init_partial();
+#else
+  epd_init();
+#endif
   epd_paint_selectimage(image_bw);
   epd_paint_clear(EPD_COLOR_WHITE);
 
-  #if EINK_PARTIAL == 1
-    epd_displayBW_partial(image_bw);
-  #endif
+#if EINK_PARTIAL == 1
+  epd_displayBW_partial(image_bw);
+#endif
 }
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
 }
 
-void ReadADC(void)
+adcData_t ReadADC(void)
 {
+  adcData_t adcData = {};
   HAL_ADC_Start(&hadc1);
 
   HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-  uint32_t power_adc = HAL_ADC_GetValue(&hadc1);
+  adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
 
   HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-  uint32_t rtc_adc = HAL_ADC_GetValue(&hadc1);
+  adcData.rtcAdc = HAL_ADC_GetValue(&hadc1);
 
   HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-  uint32_t battery_adc = HAL_ADC_GetValue(&hadc1);
+  adcData.batteryAdc = HAL_ADC_GetValue(&hadc1);
 
   HAL_ADC_Stop(&hadc1);
+
+  return adcData;
 }
 
 RTC_DateTypeDef GetDate()
@@ -197,9 +216,9 @@ RTC_TimeTypeDef GetTime()
 
 void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 {
-  char time_string[100];
-  char date_string[100];
-  char week_string[100];
+  char time_string[50];
+  char date_string[50];
+  char week_string[50];
 
   sprintf(time_string, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
   epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
@@ -209,6 +228,180 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 
   sprintf(week_string, "Day: %02d", date.WeekDay);
   epd_paint_showString(1, 40, (uint8_t *)week_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+}
+
+void DrawBme280Data(bmeData_t bmeData)
+{
+  if (1 == bmeData.connectionOk)
+  {
+    char temp_string[50];
+    char hum_string[50];
+    char press_string[50];
+
+    sprintf(temp_string, "Temperature %03.1f C", bmeData.temperature);
+    sprintf(hum_string, "Humidity %03.1f %%", bmeData.humidity);
+    sprintf(press_string, "Pressure %03.1f mm", bmeData.pressure);
+
+    epd_paint_showString(1, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+    epd_paint_showString(1, 160, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+    epd_paint_showString(1, 180, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  }
+  else
+  {
+    epd_paint_showString(10, 180, "BME280: ERROR!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  }
+}
+
+void SatelliteInit(float version)
+{
+  epd_init();
+  epd_paint_newimage(image_bw, EPD_W, EPD_H, EPD_ROTATE_180, EPD_COLOR_WHITE);
+  epd_paint_selectimage(image_bw);
+  epd_paint_clear(EPD_COLOR_WHITE);
+  epd_displayBW(image_bw);
+
+  epd_init_partial();
+  epd_paint_selectimage(image_bw);
+  epd_paint_clear(EPD_COLOR_WHITE);
+
+  char version_string[50];
+  memset(version_string, 0, sizeof(version_string));
+  sprintf(version_string, "OpenSatellite v%0.1f", version);
+  epd_paint_showString(1, 0, (uint8_t *)&version_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_displayBW_partial(image_bw);
+
+  int8_t bmeInitResult = Bme280Init();
+  if (bmeInitResult == 0)
+  {
+    epd_paint_showString(1, 20, (uint8_t *)&"BME280: OK", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  }
+  else
+  {
+    epd_paint_showString(1, 20, (uint8_t *)&"BME280: ERROR", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  }
+  epd_displayBW_partial(image_bw);
+
+  epd_paint_showString(1, 140, (uint8_t *)&"Designed by", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(1, 160, (uint8_t *)&"Vadim 'syjoosy' Nikolaev [LCT]", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_displayBW_partial(image_bw);
+
+  epd_paint_showString(1, 180, (uint8_t *)&"Starting satellite!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_displayBW_partial(image_bw);
+
+  epd_paint_clear(EPD_COLOR_WHITE);
+  epd_displayBW_partial(image_bw);
+}
+
+bmeData_t ReadBme280()
+{
+  bmeData_t bmeData = {};
+  /* Forced mode setting, switched to SLEEP mode after measurement */
+  rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
+  dev.delay_ms(40);
+  /*Get Data */
+  rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
+  if (rslt == BME280_OK)
+  {
+    bmeData.temperature = comp_data.temperature / 100.0;
+    bmeData.humidity = comp_data.humidity / 1024.0;
+    bmeData.pressure = comp_data.pressure / 10000.0 * 0.75;
+    bmeData.connectionOk = 1;
+    bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev);
+  }
+  else
+  {
+    bmeData.connectionOk = 0;
+  }
+
+  return bmeData;
+}
+
+// Настройки делителя напряжения
+#define R1_POWER 10000    // Ом (верхний резистор)
+#define R2_POWER 10000    // Ом (нижний резистор)
+
+// Настройки делителя напряжения
+#define R1_BATTERY 10000    // Ом (верхний резистор)
+#define R2_BATTERY 10000    // Ом (нижний резистор)
+
+// Диапазон напряжений для преобразования в проценты
+#define BATTERY_VOLTAGE_MIN 3.0f    // Минимальное напряжение в диапазоне (В)
+#define BATTERY_VOLTAGE_MAX 4.1f    // Максимальное напряжение в диапазоне (В)
+
+// Диапазон напряжений для преобразования в проценты
+#define POWER_VOLTAGE_MIN 3.5f    // Минимальное напряжение в диапазоне (В)
+#define POWER_VOLTAGE_MAX 5.5f    // Максимальное напряжение в диапазоне (В)
+
+// Диапазон напряжений для преобразования в проценты
+#define RTC_VOLTAGE_MIN 2.0f    // Минимальное напряжение в диапазоне (В)
+#define RTC_VOLTAGE_MAX 3.0f    // Максимальное напряжение в диапазоне (В)
+
+#define ADC_MAX_VALUE 4095.0f
+#define VOLTAGE_VREF 3.3f
+
+
+float ConvertToVoltage(uint32_t adcValue, uint32_t resistor1, uint32_t resistor2) 
+{
+  // Напряжение на входе АЦП (после делителя)
+  // V_adc = (adc_value / 4095) * V_ref
+  float adcVoltage = (float)(adcValue / ADC_MAX_VALUE * VOLTAGE_VREF); // 3.3 В — опорное напряжение АЦП
+
+  float voltage;
+  if (0 == resistor1 || 0 == resistor2)
+  {
+    voltage = adcVoltage;
+  }
+  else
+  {
+    // Восстанавливаем исходное напряжение до делителя:
+    // V_in = V_adc * (1 + R1/R2)
+    float voltage = adcVoltage * (1.0f + resistor1 / resistor2);
+  }
+
+  return voltage;
+}
+
+// Функция: Чтение АЦП и преобразование в вольты (с учётом делителя)
+voltageData_t GetVoltageData(adcData_t adcData)
+{ 
+    voltageData_t voltageData = {};
+
+    voltageData.batteryVoltage = ConvertToVoltage(adcData.batteryAdc, R1_BATTERY, R2_BATTERY);
+    voltageData.powerVoltage = ConvertToVoltage(adcData.powerAdc, R1_POWER, R1_POWER);
+    voltageData.rtcVoltage = ConvertToVoltage(adcData.rtcAdc, 0, 0);
+    
+    return voltageData;
+}
+ 
+// Функция: Преобразование напряжения в проценты в заданном диапазоне
+uint8_t VoltageToPercent(float voltage)
+{
+    // Ограничиваем напряжение диапазоном
+    if (voltage < VOLTAGE_MIN) 
+    {
+      voltage = VOLTAGE_MIN;
+    }
+      
+    if (voltage > VOLTAGE_MAX)
+    {
+      voltage = VOLTAGE_MAX;
+    }
+      
+    // Преобразуем в проценты: (v - min) / (max - min) * 100
+    uint8_t percent = (voltage - VOLTAGE_MIN) / (VOLTAGE_MAX - VOLTAGE_MIN) * 100.0f;
+
+    // Ограничиваем от 0 до 100
+    if (percent < 0.0f) 
+    {
+      percent = 0.0f;
+    }
+
+    if (percent > 100.0f) 
+    {
+      percent = 100.0f;
+    }
+
+    return percent;
 }
 /* USER CODE END 0 */
 
@@ -246,44 +439,7 @@ int main(void)
   MX_ADC1_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-
-  epd_init();
-  epd_paint_newimage(image_bw, EPD_W, EPD_H, EPD_ROTATE_180, EPD_COLOR_WHITE);
-  epd_paint_selectimage(image_bw);
-  epd_paint_clear(EPD_COLOR_WHITE);
-  epd_displayBW(image_bw);
-
-  epd_init_partial();
-  epd_paint_selectimage(image_bw);
-  epd_paint_clear(EPD_COLOR_WHITE);
-
-  char version_string[50];
-  memset(version_string, 0, sizeof(version_string));
-  sprintf(version_string, "OpenSatellite v%0.1f", version);
-  epd_paint_showString(1, 0, (uint8_t *)&version_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_displayBW_partial(image_bw);
-
-  int8_t bmeInitResult = Bme280Init();
-  if (bmeInitResult == 0)
-  {
-    epd_paint_showString(1, 20, (uint8_t *)&"BME280: OK", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  }
-  else
-  {
-    epd_paint_showString(1, 20, (uint8_t *)&"BME280: ERROR", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  }
-  epd_displayBW_partial(image_bw);
-
-  epd_paint_showString(1, 140, (uint8_t *)&"Designed by", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_paint_showString(1, 160, (uint8_t *)&"Vadim 'syjoosy' Nikolaev [LCT]", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_displayBW_partial(image_bw);
-
-  epd_paint_showString(1, 180, (uint8_t *)&"Starting satellite!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_displayBW_partial(image_bw);
-
-  HAL_Delay(1000);
-  epd_paint_clear(EPD_COLOR_WHITE);
-  epd_displayBW_partial(image_bw);
+  SatelliteInit(version);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -294,45 +450,18 @@ int main(void)
     RTC_DateTypeDef date = GetDate();
     DrawDateTime(date, time);
 
-    ReadADC();
+    adcData_t adcData = ReadADC();
+    voltageData_t voltageData = GetVoltageData(adcData);
 
-    /* Forced mode setting, switched to SLEEP mode after measurement */
-    rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
-    dev.delay_ms(40);
-    /*Get Data */
-    rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
-    if (rslt == BME280_OK)
-    {
-      temperature = comp_data.temperature / 100.0;
-      humidity = comp_data.humidity / 1024.0;
-      pressure = comp_data.pressure / 10000.0 * 0.75;
-
-      /*Display Data */
-      memset(hum_string, 0, sizeof(hum_string));
-      memset(temp_string, 0, sizeof(temp_string));
-      memset(press_string, 0, sizeof(press_string));
-
-      sprintf(hum_string, "Humidity %03.1f %%", humidity);
-      sprintf(temp_string, "Temperature %03.1f C", temperature);
-      sprintf(press_string, "Pressure %03.1f mm", pressure);
-
-      epd_paint_showString(1, 120, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-      epd_paint_showString(1, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-      epd_paint_showString(1, 160, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-
-      bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev);
-    }
-    else
-    {
-      epd_paint_showString(10, 180, "BME280 ERROR!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    }
+    bmeData_t bmeData = ReadBme280();
+    DrawBme280Data(bmeData);
 
     #if EINK_PARTIAL == 1
-      epd_displayBW_partial(image_bw);
-    #else 
-      epd_displayBW(image_bw);
+        epd_displayBW_partial(image_bw);
+    #else
+        epd_displayBW(image_bw);
     #endif
-    
+
     epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
 
     EnterStopMode();
@@ -365,7 +494,9 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    if (1 == bmeData.connectionOk)
+
+      Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
