@@ -34,6 +34,29 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define EINK_PARTIAL 0
+
+// Настройки делителя напряжения
+#define R1_POWER 10000 // Ом (верхний резистор)
+#define R2_POWER 10000 // Ом (нижний резистор)
+
+// Настройки делителя напряжения
+#define R1_BATTERY 10000 // Ом (верхний резистор)
+#define R2_BATTERY 10000 // Ом (нижний резистор)
+
+// Диапазон напряжений для преобразования в проценты
+#define BATTERY_VOLTAGE_MIN 3.0f // Минимальное напряжение в диапазоне (В)
+#define BATTERY_VOLTAGE_MAX 4.1f // Максимальное напряжение в диапазоне (В)
+
+// Диапазон напряжений для преобразования в проценты
+#define POWER_VOLTAGE_MIN 3.5f // Минимальное напряжение в диапазоне (В)
+#define POWER_VOLTAGE_MAX 5.5f // Максимальное напряжение в диапазоне (В)
+
+// Диапазон напряжений для преобразования в проценты
+#define RTC_VOLTAGE_MIN 2.0f // Минимальное напряжение в диапазоне (В)
+#define RTC_VOLTAGE_MAX 3.0f // Максимальное напряжение в диапазоне (В)
+
+#define ADC_MAX_VALUE 4095.0f
+#define VOLTAGE_VREF 3.3f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +75,6 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 uint8_t image_bw[EPD_W_BUFF_SIZE * EPD_H];
-uint8_t text[20];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,6 +117,12 @@ typedef struct
   float powerVoltage;
 } voltageData_t;
 
+typedef struct
+{
+  float batteryPercent;
+  float rtcPercent;
+  float powerPercent;
+} percentData_t;
 
 int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
@@ -316,31 +344,7 @@ bmeData_t ReadBme280()
   return bmeData;
 }
 
-// Настройки делителя напряжения
-#define R1_POWER 10000    // Ом (верхний резистор)
-#define R2_POWER 10000    // Ом (нижний резистор)
-
-// Настройки делителя напряжения
-#define R1_BATTERY 10000    // Ом (верхний резистор)
-#define R2_BATTERY 10000    // Ом (нижний резистор)
-
-// Диапазон напряжений для преобразования в проценты
-#define BATTERY_VOLTAGE_MIN 3.0f    // Минимальное напряжение в диапазоне (В)
-#define BATTERY_VOLTAGE_MAX 4.1f    // Максимальное напряжение в диапазоне (В)
-
-// Диапазон напряжений для преобразования в проценты
-#define POWER_VOLTAGE_MIN 3.5f    // Минимальное напряжение в диапазоне (В)
-#define POWER_VOLTAGE_MAX 5.5f    // Максимальное напряжение в диапазоне (В)
-
-// Диапазон напряжений для преобразования в проценты
-#define RTC_VOLTAGE_MIN 2.0f    // Минимальное напряжение в диапазоне (В)
-#define RTC_VOLTAGE_MAX 3.0f    // Максимальное напряжение в диапазоне (В)
-
-#define ADC_MAX_VALUE 4095.0f
-#define VOLTAGE_VREF 3.3f
-
-
-float ConvertToVoltage(uint32_t adcValue, uint32_t resistor1, uint32_t resistor2) 
+float ConvertToVoltage(uint32_t adcValue, uint32_t resistor1, uint32_t resistor2)
 {
   // Напряжение на входе АЦП (после делителя)
   // V_adc = (adc_value / 4095) * V_ref
@@ -363,45 +367,82 @@ float ConvertToVoltage(uint32_t adcValue, uint32_t resistor1, uint32_t resistor2
 
 // Функция: Чтение АЦП и преобразование в вольты (с учётом делителя)
 voltageData_t GetVoltageData(adcData_t adcData)
-{ 
-    voltageData_t voltageData = {};
-
-    voltageData.batteryVoltage = ConvertToVoltage(adcData.batteryAdc, R1_BATTERY, R2_BATTERY);
-    voltageData.powerVoltage = ConvertToVoltage(adcData.powerAdc, R1_POWER, R1_POWER);
-    voltageData.rtcVoltage = ConvertToVoltage(adcData.rtcAdc, 0, 0);
-    
-    return voltageData;
-}
- 
-// Функция: Преобразование напряжения в проценты в заданном диапазоне
-uint8_t VoltageToPercent(float voltage)
 {
-    // Ограничиваем напряжение диапазоном
-    if (voltage < VOLTAGE_MIN) 
-    {
-      voltage = VOLTAGE_MIN;
-    }
-      
-    if (voltage > VOLTAGE_MAX)
-    {
-      voltage = VOLTAGE_MAX;
-    }
-      
-    // Преобразуем в проценты: (v - min) / (max - min) * 100
-    uint8_t percent = (voltage - VOLTAGE_MIN) / (VOLTAGE_MAX - VOLTAGE_MIN) * 100.0f;
+  voltageData_t voltageData = {};
 
-    // Ограничиваем от 0 до 100
-    if (percent < 0.0f) 
-    {
-      percent = 0.0f;
-    }
+  voltageData.batteryVoltage = ConvertToVoltage(adcData.batteryAdc, R1_BATTERY, R2_BATTERY);
+  voltageData.powerVoltage = ConvertToVoltage(adcData.powerAdc, R1_POWER, R1_POWER);
+  voltageData.rtcVoltage = ConvertToVoltage(adcData.rtcAdc, 0, 0);
 
-    if (percent > 100.0f) 
-    {
-      percent = 100.0f;
-    }
+  return voltageData;
+}
 
-    return percent;
+uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
+{
+  // Ограничиваем напряжение диапазоном
+  if (voltage < voltageMin)
+  {
+    voltage = voltageMin;
+  }
+
+  if (voltage > voltageMax)
+  {
+    voltage = voltageMax;
+  }
+
+  // Преобразуем в проценты: (v - min) / (max - min) * 100
+  uint8_t percent = (voltage - voltageMin) / (voltageMax - voltageMin) * 100.0f;
+
+  // Ограничиваем от 0 до 100
+  if (percent < 0)
+  {
+    percent = 0;
+  }
+
+  if (percent > 100)
+  {
+    percent = 100;
+  }
+
+  return percent;
+}
+
+// Функция: Преобразование напряжения в проценты в заданном диапазоне
+percentData_t GetPercentData(voltageData_t voltageData)
+{
+  percentData_t percentData = {};
+
+  percentData.batteryPercent = ConvertToPercent(voltageData.batteryVoltage, BATTERY_VOLTAGE_MIN, BATTERY_VOLTAGE_MAX);
+  percentData.powerPercent = ConvertToPercent(voltageData.powerVoltage, POWER_VOLTAGE_MIN, POWER_VOLTAGE_MAX);
+  percentData.rtcPercent = ConvertToPercent(voltageData.rtcVoltage, RTC_VOLTAGE_MIN, RTC_VOLTAGE_MAX);
+
+  return percentData;
+}
+
+void DrawPowerData(percentData_t percentData)
+{
+  char powerPercent[50];
+  char batteryPercent[50];
+  char rtcPercent[50];
+
+  sprintf(powerPercent, "Power %i %%", percentData.powerPercent);
+  sprintf(batteryPercent, "Battery %i %%", percentData.batteryPercent);
+  sprintf(rtcPercent, "RTC %i %%", percentData.rtcPercent);
+
+  epd_paint_showString(1, 80, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(1, 100, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(1, 120, rtcPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+}
+
+void SendDataToDisplay()
+{
+#if EINK_PARTIAL == 1
+  epd_displayBW_partial(image_bw);
+#else
+  epd_displayBW(image_bw);
+#endif
+
+  epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
 }
 /* USER CODE END 0 */
 
@@ -452,18 +493,13 @@ int main(void)
 
     adcData_t adcData = ReadADC();
     voltageData_t voltageData = GetVoltageData(adcData);
+    percentData_t percentData = GetPercentData(voltageData);
+    DrawPowerData(percentData);
 
     bmeData_t bmeData = ReadBme280();
     DrawBme280Data(bmeData);
 
-    #if EINK_PARTIAL == 1
-        epd_displayBW_partial(image_bw);
-    #else
-        epd_displayBW(image_bw);
-    #endif
-
-    epd_enter_deepsleepmode(EPD_DEEPSLEEP_MODE1);
-
+    SendDataToDisplay();
     EnterStopMode();
     /* USER CODE END WHILE */
 
