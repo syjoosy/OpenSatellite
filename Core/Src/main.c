@@ -119,9 +119,9 @@ typedef struct
 
 typedef struct
 {
-  float batteryPercent;
-  float rtcPercent;
-  float powerPercent;
+  uint8_t batteryPercent;
+  uint8_t rtcPercent;
+  uint8_t powerPercent;
 } percentData_t;
 
 int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
@@ -214,13 +214,13 @@ adcData_t ReadADC(void)
   adcData_t adcData = {};
   HAL_ADC_Start(&hadc1);
 
-  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  HAL_ADC_PollForConversion(&hadc1, 10);
   adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
 
-  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  HAL_ADC_PollForConversion(&hadc1, 10);
   adcData.rtcAdc = HAL_ADC_GetValue(&hadc1);
 
-  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  HAL_ADC_PollForConversion(&hadc1, 10);
   adcData.batteryAdc = HAL_ADC_GetValue(&hadc1);
 
   HAL_ADC_Stop(&hadc1);
@@ -425,9 +425,9 @@ void DrawPowerData(percentData_t percentData)
   char batteryPercent[50];
   char rtcPercent[50];
 
-  sprintf(powerPercent, "Power %i %%", percentData.powerPercent);
-  sprintf(batteryPercent, "Battery %i %%", percentData.batteryPercent);
-  sprintf(rtcPercent, "RTC %i %%", percentData.rtcPercent);
+  sprintf(powerPercent, "Power %d %%", percentData.powerPercent);
+  sprintf(batteryPercent, "Battery %d %%", percentData.batteryPercent);
+  sprintf(rtcPercent, "RTC %d %%", percentData.rtcPercent);
 
   epd_paint_showString(1, 80, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
   epd_paint_showString(1, 100, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
@@ -499,6 +499,8 @@ int main(void)
     bmeData_t bmeData = ReadBme280();
     DrawBme280Data(bmeData);
 
+    
+    epd_paint_showString(140, 80, "TEST", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
     SendDataToDisplay();
     EnterStopMode();
     /* USER CODE END WHILE */
