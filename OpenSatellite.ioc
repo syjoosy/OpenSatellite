@@ -1,6 +1,6 @@
 #MicroXplorer Configuration settings - do not modify
-ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_5
-ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_11
+ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_11
+ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_5
 ADC1.Channel-2\#ChannelRegularConversion=ADC_CHANNEL_12
 ADC1.CommonPathInternal=null|null|null|null
 ADC1.EOCSelection=ADC_EOC_SINGLE_CONV
@@ -13,9 +13,9 @@ ADC1.OffsetNumber-2\#ChannelRegularConversion=ADC_OFFSET_NONE
 ADC1.Rank-0\#ChannelRegularConversion=1
 ADC1.Rank-1\#ChannelRegularConversion=2
 ADC1.Rank-2\#ChannelRegularConversion=3
-ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_92CYCLES_5
-ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_92CYCLES_5
-ADC1.SamplingTime-2\#ChannelRegularConversion=ADC_SAMPLETIME_92CYCLES_5
+ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_247CYCLES_5
+ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_247CYCLES_5
+ADC1.SamplingTime-2\#ChannelRegularConversion=ADC_SAMPLETIME_247CYCLES_5
 ADC1.master=1
 CAD.formats=
 CAD.pinconfig=

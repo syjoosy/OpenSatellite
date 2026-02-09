@@ -209,19 +209,49 @@ void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
 }
 
+// HAL_ADC_PollForConversion(&hadc1, 100); 
+  // if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) 
+  // {
+  //   adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
+  // }
+  // else
+  // {
+  //   adcData.powerAdc = 0;
+  // }
+  
+
+  // if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) 
+  // {
+  //   adcData.rtcAdc = HAL_ADC_GetValue(&hadc1);
+  // }
+  // else
+  // {
+  //   adcData.rtcAdc = 0;
+  // }
+
+  // if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK)
+  // {
+  //   adcData.batteryAdc = HAL_ADC_GetValue(&hadc1);
+  // }
+  // else
+  // {
+  //   adcData.batteryAdc = 0;
+  // }
+
 adcData_t ReadADC(void)
 {
   adcData_t adcData = {};
+
   HAL_ADC_Start(&hadc1);
   HAL_Delay(1); // или 50–100 мкс таймером
 
-  HAL_ADC_PollForConversion(&hadc1, 100);
-  adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
-
-  HAL_ADC_PollForConversion(&hadc1, 100);
+  HAL_ADC_PollForConversion(&hadc1, 500);
   adcData.rtcAdc = HAL_ADC_GetValue(&hadc1);
 
-  HAL_ADC_PollForConversion(&hadc1, 100);
+  HAL_ADC_PollForConversion(&hadc1, 500);
+  adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
+  
+  HAL_ADC_PollForConversion(&hadc1, 500);
   adcData.batteryAdc = HAL_ADC_GetValue(&hadc1);
 
   HAL_ADC_Stop(&hadc1);
@@ -420,14 +450,14 @@ percentData_t GetPercentData(voltageData_t voltageData)
   return percentData;
 }
 
-void DrawPowerData(percentData_t percentData, voltageData_t voltageData)
+void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData_t adcData)
 {
   char powerPercent[50];
   char batteryPercent[50];
   char rtcPercent[50];
-  sprintf(powerPercent, "Power %d%% (%0.2fV)", percentData.powerPercent, voltageData.powerVoltage);
-  sprintf(batteryPercent, "Battery %d%% (%0.2fV)", percentData.batteryPercent, voltageData.batteryVoltage);
-  sprintf(rtcPercent, "RTC %d%% (%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
+  sprintf(powerPercent, "Power %d%%(%0.2fV)(%d)", percentData.powerPercent, voltageData.powerVoltage, adcData.powerAdc);
+  sprintf(batteryPercent, "Battery %d%%(%0.2fV)(%d)", percentData.batteryPercent, voltageData.batteryVoltage, adcData.batteryAdc);
+  sprintf(rtcPercent, "RTC %d%%(%0.2fV)(%d)", percentData.rtcPercent, voltageData.rtcVoltage, adcData.rtcAdc);
 
   epd_paint_showString(1, 80, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
   epd_paint_showString(1, 100, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
@@ -494,13 +524,11 @@ int main(void)
     adcData_t adcData = ReadADC();
     voltageData_t voltageData = GetVoltageData(adcData);
     percentData_t percentData = GetPercentData(voltageData);
-    DrawPowerData(percentData, voltageData);
+    DrawPowerData(percentData, voltageData, adcData);
 
     bmeData_t bmeData = ReadBme280();
     DrawBme280Data(bmeData);
-
     
-    epd_paint_showString(140, 80, "TEST", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
     SendDataToDisplay();
     EnterStopMode();
     /* USER CODE END WHILE */
@@ -602,9 +630,9 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_247CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -615,7 +643,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
