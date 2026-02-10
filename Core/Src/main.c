@@ -66,6 +66,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c1;
 
@@ -80,6 +81,7 @@ uint8_t image_bw[EPD_W_BUFF_SIZE * EPD_H];
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
@@ -238,6 +240,16 @@ void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
   //   adcData.batteryAdc = 0;
   // }
 
+volatile uint16_t adc[3] = {0,}; // у нас 3 канала поэтому массив из 3 элементов
+volatile uint8_t flag = 0;
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+    if(hadc->Instance == ADC1)
+    {
+        flag = 1;
+    }
+}
+
 adcData_t ReadADC(void)
 {
   adcData_t adcData = {};
@@ -390,7 +402,8 @@ float ConvertToVoltage(uint32_t adcValue, float resistor1, float resistor2)
   {
     // Восстанавливаем исходное напряжение до делителя:
     // V_in = V_adc * (1 + R1/R2)
-    voltage = adcVoltage * (1.0f + resistor1 / resistor2);
+    // 0.07 - поправка для корректности данных
+    voltage = adcVoltage * (1.0f + resistor1 / resistor2) + 0.07f;
   }
 
   return voltage;
@@ -505,11 +518,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+  // HAL_ADCEx_Calibration_Start(&hadc1);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc, 2); // стартуем АЦП
   SatelliteInit(version);
   /* USER CODE END 2 */
 
@@ -521,10 +537,30 @@ int main(void)
     RTC_DateTypeDef date = GetDate();
     DrawDateTime(date, time);
 
-    adcData_t adcData = ReadADC();
-    voltageData_t voltageData = GetVoltageData(adcData);
-    percentData_t percentData = GetPercentData(voltageData);
-    DrawPowerData(percentData, voltageData, adcData);
+    if(flag)
+    {
+          flag = 0;
+
+          HAL_ADC_Stop_DMA(&hadc1); // это необязательно
+          adcData_t adcData = {};
+          adcData.rtcAdc = adc[0];
+          adcData.powerAdc = adc[1];
+          adcData.batteryAdc = adc[2];
+          // snprintf(trans_str, 63, "ADC %d %d\n", (uint16_t)adc[0], (uint16_t)adc[1]);
+          // HAL_UART_Transmit(&huart1, (uint8_t*)trans_str, strlen(trans_str), 1000);
+          adc[0] = 0;
+          adc[1] = 0;
+          adc[2] = 0;
+          voltageData_t voltageData = GetVoltageData(adcData);
+          percentData_t percentData = GetPercentData(voltageData);
+          DrawPowerData(percentData, voltageData, adcData);
+          HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc, 3);
+    }
+
+    // adcData_t adcData = ReadADC();
+    // voltageData_t voltageData = GetVoltageData(adcData);
+    // percentData_t percentData = GetPercentData(voltageData);
+    // DrawPowerData(percentData, voltageData, adcData);
 
     bmeData_t bmeData = ReadBme280();
     DrawBme280Data(bmeData);
@@ -822,6 +858,23 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMAMUX1_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 }
 
