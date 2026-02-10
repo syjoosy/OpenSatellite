@@ -57,6 +57,8 @@
 
 #define ADC_MAX_VALUE 4095.0f
 #define VOLTAGE_VREF 3.3f
+
+#define ADC_CHANNEL_COUNT 3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -76,6 +78,13 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 uint8_t image_bw[EPD_W_BUFF_SIZE * EPD_H];
+struct bme280_dev dev;
+struct bme280_data comp_data;
+int8_t rslt;
+volatile uint16_t adc[ADC_CHANNEL_COUNT] = {
+    0,
+};
+volatile uint8_t adcDataReady = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,10 +101,6 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-struct bme280_dev dev;
-struct bme280_data comp_data;
-int8_t rslt;
 
 typedef struct
 {
@@ -211,62 +216,26 @@ void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
 }
 
-// HAL_ADC_PollForConversion(&hadc1, 100); 
-  // if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) 
-  // {
-  //   adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
-  // }
-  // else
-  // {
-  //   adcData.powerAdc = 0;
-  // }
-  
-
-  // if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) 
-  // {
-  //   adcData.rtcAdc = HAL_ADC_GetValue(&hadc1);
-  // }
-  // else
-  // {
-  //   adcData.rtcAdc = 0;
-  // }
-
-  // if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK)
-  // {
-  //   adcData.batteryAdc = HAL_ADC_GetValue(&hadc1);
-  // }
-  // else
-  // {
-  //   adcData.batteryAdc = 0;
-  // }
-
-volatile uint16_t adc[3] = {0,}; // у нас 3 канала поэтому массив из 3 элементов
-volatile uint8_t flag = 0;
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    if(hadc->Instance == ADC1)
-    {
-        flag = 1;
-    }
+  if (hadc->Instance == ADC1)
+  {
+    adcDataReady = 1;
+    HAL_ADC_Stop_DMA(&hadc1);
+  }
 }
 
-adcData_t ReadADC(void)
+adcData_t GetAdcData(void)
 {
   adcData_t adcData = {};
 
-  HAL_ADC_Start(&hadc1);
-  HAL_Delay(1); // или 50–100 мкс таймером
+  adcData.rtcAdc = adc[0];
+  adcData.powerAdc = adc[1];
+  adcData.batteryAdc = adc[2];
 
-  HAL_ADC_PollForConversion(&hadc1, 500);
-  adcData.rtcAdc = HAL_ADC_GetValue(&hadc1);
-
-  HAL_ADC_PollForConversion(&hadc1, 500);
-  adcData.powerAdc = HAL_ADC_GetValue(&hadc1);
-  
-  HAL_ADC_PollForConversion(&hadc1, 500);
-  adcData.batteryAdc = HAL_ADC_GetValue(&hadc1);
-
-  HAL_ADC_Stop(&hadc1);
+  adc[0] = 0;
+  adc[1] = 0;
+  adc[2] = 0;
 
   return adcData;
 }
@@ -353,7 +322,7 @@ void SatelliteInit(float version)
   epd_displayBW_partial(image_bw);
 
   epd_paint_showString(1, 140, (uint8_t *)&"Designed by", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_paint_showString(1, 160, (uint8_t *)&"Vadim 'syjoosy' Nikolaev [LCT]", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(1, 160, (uint8_t *)&"Vadim 'syjoosy' Nikolaev", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
   epd_displayBW_partial(image_bw);
 
   epd_paint_showString(1, 180, (uint8_t *)&"Starting satellite!", EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
@@ -373,9 +342,9 @@ bmeData_t ReadBme280()
   rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
   if (rslt == BME280_OK)
   {
-    bmeData.temperature = comp_data.temperature / 100.0;
-    bmeData.humidity = comp_data.humidity / 1024.0;
-    bmeData.pressure = comp_data.pressure / 10000.0 * 0.75;
+    bmeData.temperature = comp_data.temperature / 100.0f;
+    bmeData.humidity = comp_data.humidity / 1024.0f;
+    bmeData.pressure = comp_data.pressure / 10000.0f * 0.75f;
     bmeData.connectionOk = 1;
     bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev);
   }
@@ -490,9 +459,9 @@ void SendDataToDisplay()
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -525,7 +494,7 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   // HAL_ADCEx_Calibration_Start(&hadc1);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc, 2); // стартуем АЦП
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)&adc, ADC_CHANNEL_COUNT); // стартуем АЦП
   SatelliteInit(version);
   /* USER CODE END 2 */
 
@@ -537,34 +506,20 @@ int main(void)
     RTC_DateTypeDef date = GetDate();
     DrawDateTime(date, time);
 
-    if(flag)
+    if (adcDataReady)
     {
-          flag = 0;
+      adcDataReady = 0;
+      adcData_t adcData = GetAdcData();
+      voltageData_t voltageData = GetVoltageData(adcData);
+      percentData_t percentData = GetPercentData(voltageData);
+      DrawPowerData(percentData, voltageData, adcData);
 
-          HAL_ADC_Stop_DMA(&hadc1); // это необязательно
-          adcData_t adcData = {};
-          adcData.rtcAdc = adc[0];
-          adcData.powerAdc = adc[1];
-          adcData.batteryAdc = adc[2];
-          // snprintf(trans_str, 63, "ADC %d %d\n", (uint16_t)adc[0], (uint16_t)adc[1]);
-          // HAL_UART_Transmit(&huart1, (uint8_t*)trans_str, strlen(trans_str), 1000);
-          adc[0] = 0;
-          adc[1] = 0;
-          adc[2] = 0;
-          voltageData_t voltageData = GetVoltageData(adcData);
-          percentData_t percentData = GetPercentData(voltageData);
-          DrawPowerData(percentData, voltageData, adcData);
-          HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc, 3);
+      HAL_ADC_Start_DMA(&hadc1, (uint32_t *)&adc, ADC_CHANNEL_COUNT);
     }
-
-    // adcData_t adcData = ReadADC();
-    // voltageData_t voltageData = GetVoltageData(adcData);
-    // percentData_t percentData = GetPercentData(voltageData);
-    // DrawPowerData(percentData, voltageData, adcData);
 
     bmeData_t bmeData = ReadBme280();
     DrawBme280Data(bmeData);
-    
+
     SendDataToDisplay();
     EnterStopMode();
     /* USER CODE END WHILE */
@@ -575,22 +530,22 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+   * in the RCC_OscInitTypeDef structure.
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
@@ -600,9 +555,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -615,10 +569,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief ADC1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_ADC1_Init(void)
 {
 
@@ -634,7 +588,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 1 */
 
   /** Common config
-  */
+   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
@@ -657,7 +611,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure the ADC multi-mode
-  */
+   */
   multimode.Mode = ADC_MODE_INDEPENDENT;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
@@ -665,7 +619,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_247CYCLES_5;
@@ -678,7 +632,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -687,7 +641,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_12;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -697,14 +651,13 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
-
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_I2C1_Init(void)
 {
 
@@ -730,14 +683,14 @@ static void MX_I2C1_Init(void)
   }
 
   /** Configure Analogue filter
-  */
+   */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure Digital filter
-  */
+   */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
   {
     Error_Handler();
@@ -745,14 +698,13 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief RTC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_RTC_Init(void)
 {
 
@@ -768,7 +720,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
-  */
+   */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
   hrtc.Init.AsynchPrediv = 127;
@@ -788,7 +740,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
-  */
+   */
   sTime.Hours = 0x0;
   sTime.Minutes = 0x0;
   sTime.Seconds = 0x0;
@@ -810,7 +762,7 @@ static void MX_RTC_Init(void)
   }
 
   /** Enable the WakeUp
-  */
+   */
   if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 29, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK)
   {
     Error_Handler();
@@ -818,14 +770,13 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */
-
 }
 
 /**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI1_Init(void)
 {
 
@@ -858,12 +809,11 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
-
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_DMA_Init(void)
 {
 
@@ -875,19 +825,18 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -896,13 +845,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RST_Pin|DC_Pin|CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, RST_Pin | DC_Pin | CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(POWER_LED_GPIO_Port, POWER_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : RST_Pin DC_Pin CS_Pin */
-  GPIO_InitStruct.Pin = RST_Pin|DC_Pin|CS_Pin;
+  GPIO_InitStruct.Pin = RST_Pin | DC_Pin | CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -921,13 +870,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(POWER_LED_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* ADC pins */
   GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_11 | GPIO_PIN_12; // пример
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -935,9 +884,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -949,14 +898,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
