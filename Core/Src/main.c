@@ -437,13 +437,17 @@ void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData
   char powerPercent[50];
   char batteryPercent[50];
   char rtcPercent[50];
-  sprintf(powerPercent, "Power %d%%(%0.2fV)(%d)", percentData.powerPercent, voltageData.powerVoltage, adcData.powerAdc);
-  sprintf(batteryPercent, "Battery %d%%(%0.2fV)(%d)", percentData.batteryPercent, voltageData.batteryVoltage, adcData.batteryAdc);
-  sprintf(rtcPercent, "RTC %d%%(%0.2fV)(%d)", percentData.rtcPercent, voltageData.rtcVoltage, adcData.rtcAdc);
+  sprintf(powerPercent, "Power %d%%(%0.2fV)", percentData.powerPercent, voltageData.powerVoltage);
+  sprintf(batteryPercent, "Battery %d%%(%0.2fV)", percentData.batteryPercent, voltageData.batteryVoltage);
+  sprintf(rtcPercent, "RTC %d%%(%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
 
-  epd_paint_showString(1, 80, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_paint_showString(1, 100, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_paint_showString(1, 120, rtcPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(110, 100, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  // epd_paint_showString(1, 100, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  // epd_paint_showString(1, 120, rtcPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+
+
+  // epd_paint_drawRectangle(1, 120, 15, 85, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 120, 100, 105, EPD_COLOR_BLACK, 0);
 }
 
 void SendDataToDisplay()
