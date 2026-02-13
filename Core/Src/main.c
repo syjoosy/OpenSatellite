@@ -442,12 +442,13 @@ void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData
   sprintf(rtcPercent, "RTC %d%%(%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
 
   epd_paint_showString(110, 100, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  // epd_paint_showString(1, 100, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  // epd_paint_showString(1, 120, rtcPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-
+  epd_paint_showString(110, 120, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(110, 140, rtcPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
 
   // epd_paint_drawRectangle(1, 120, 15, 85, EPD_COLOR_BLACK, 0);
   epd_paint_drawRectangle(1, 120, 100, 105, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 140, 100, 125, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 160, 100, 145, EPD_COLOR_BLACK, 0);
 }
 
 void SendDataToDisplay()
