@@ -277,13 +277,35 @@ void DrawBme280Data(bmeData_t bmeData)
     char hum_string[50];
     char press_string[50];
 
-    sprintf(temp_string, "Temperature %03.1f C", bmeData.temperature);
-    sprintf(hum_string, "Humidity %03.1f %%", bmeData.humidity);
-    sprintf(press_string, "Pressure %03.1f mm", bmeData.pressure);
+    sprintf(temp_string, "Temperature: %03.1fC", bmeData.temperature);
+    sprintf(hum_string, "Humidity: %03.1f%%", bmeData.humidity);
+    sprintf(press_string, "Pressure: %03.1fmm", bmeData.pressure);
 
-    epd_paint_showString(1, 140, temp_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    epd_paint_showString(1, 160, hum_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-    epd_paint_showString(1, 180, press_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+    epd_paint_showString(1, 90, temp_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
+    epd_paint_showString(1, 110, hum_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
+    epd_paint_showString(1, 130, press_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
+
+    const uint8_t powerHeight = 149;
+    const uint8_t batteryHeight = 169;
+    const uint8_t rtcHeight = 189;
+    const uint8_t barHeight = 10;
+
+    epd_paint_drawRectangle(125, 90, 140, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(150, 90, 165, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(175, 90, 190, 140, EPD_COLOR_BLACK, 0);
+
+    // epd_paint_showString(105, powerHeight + 1, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+    // epd_paint_showString(105, batteryHeight + 1, batteryPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+    // epd_paint_showString(105, rtcHeight + 1, rtcPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+
+    // epd_paint_drawRectangle(1, powerHeight, 100, powerHeight + barHeight, EPD_COLOR_BLACK, 0);
+    // epd_paint_drawRectangle(1, powerHeight, percentData.powerPercent, powerHeight + barHeight, EPD_COLOR_BLACK, 1);
+
+    // epd_paint_drawRectangle(1, batteryHeight, 100, batteryHeight + barHeight, EPD_COLOR_BLACK, 0);
+    // epd_paint_drawRectangle(1, batteryHeight, percentData.batteryPercent, batteryHeight + barHeight, EPD_COLOR_BLACK, 1);
+
+    // epd_paint_drawRectangle(1, rtcHeight, 100, rtcHeight + barHeight, EPD_COLOR_BLACK, 0);
+    // epd_paint_drawRectangle(1, rtcHeight, percentData.rtcPercent, rtcHeight + barHeight, EPD_COLOR_BLACK, 1);
   }
   else
   {
@@ -436,6 +458,7 @@ void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData
   char powerPercent[50];
   char batteryPercent[50];
   char rtcPercent[50];
+
   sprintf(powerPercent, "VIN: %d%%(%0.2fV)", percentData.powerPercent, voltageData.powerVoltage);
   sprintf(batteryPercent, "BAT: %d%%(%0.2fV)", percentData.batteryPercent, voltageData.batteryVoltage);
   sprintf(rtcPercent, "RTC: %d%%(%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
@@ -443,7 +466,6 @@ void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData
   const uint8_t powerHeight = 149;
   const uint8_t batteryHeight = 169;
   const uint8_t rtcHeight = 189;
-
   const uint8_t barHeight = 10;
 
   epd_paint_showString(105, powerHeight + 1, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
@@ -532,7 +554,7 @@ int main(void)
     }
 
     bmeData_t bmeData = ReadBme280();
-    // DrawBme280Data(bmeData);
+    DrawBme280Data(bmeData);
 
     SendDataToDisplay();
     EnterStopMode();
