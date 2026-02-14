@@ -34,7 +34,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define EINK_PARTIAL 0
-
 // Настройки делителя напряжения
 #define R1_POWER 2000 // Ом (верхний резистор)
 #define R2_POWER 2000 // Ом (нижний резистор)
@@ -127,7 +126,7 @@ typedef struct
 typedef struct
 {
   uint8_t batteryPercent;
-  uint8_t rtcPercent;
+  int rtcPercent;
   uint8_t powerPercent;
 } percentData_t;
 
@@ -437,18 +436,22 @@ void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData
   char powerPercent[50];
   char batteryPercent[50];
   char rtcPercent[50];
-  sprintf(powerPercent, "Power %d%%(%0.2fV)", percentData.powerPercent, voltageData.powerVoltage);
-  sprintf(batteryPercent, "Battery %d%%(%0.2fV)", percentData.batteryPercent, voltageData.batteryVoltage);
-  sprintf(rtcPercent, "RTC %d%%(%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
+  sprintf(powerPercent, "VIN: %d%%(%0.2fV)", percentData.powerPercent, voltageData.powerVoltage);
+  sprintf(batteryPercent, "BAT: %d%%(%0.2fV)", percentData.batteryPercent, voltageData.batteryVoltage);
+  sprintf(rtcPercent, "RTC: %d%%(%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
 
-  epd_paint_showString(110, 100, powerPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_paint_showString(110, 120, batteryPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
-  epd_paint_showString(110, 140, rtcPercent, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(105, 146, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+  epd_paint_showString(105, 166, batteryPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+  epd_paint_showString(105, 186, rtcPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
 
-  // epd_paint_drawRectangle(1, 120, 15, 85, EPD_COLOR_BLACK, 0);
-  epd_paint_drawRectangle(1, 120, 100, 105, EPD_COLOR_BLACK, 0);
-  epd_paint_drawRectangle(1, 140, 100, 125, EPD_COLOR_BLACK, 0);
-  epd_paint_drawRectangle(1, 160, 100, 145, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 145, 100, 155, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 145, percentData.powerPercent, 155, EPD_COLOR_BLACK, 1);
+
+  epd_paint_drawRectangle(1, 165, 100, 175, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 165, percentData.batteryPercent, 175, EPD_COLOR_BLACK, 1);
+
+  epd_paint_drawRectangle(1, 185, 100, 195, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, 185, percentData.rtcPercent, 195, EPD_COLOR_BLACK, 1);
 }
 
 void SendDataToDisplay()
@@ -523,7 +526,7 @@ int main(void)
     }
 
     bmeData_t bmeData = ReadBme280();
-    DrawBme280Data(bmeData);
+    // DrawBme280Data(bmeData);
 
     SendDataToDisplay();
     EnterStopMode();
