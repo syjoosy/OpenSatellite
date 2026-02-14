@@ -269,6 +269,37 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   epd_paint_showString(1, 40, (uint8_t *)week_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
 }
 
+uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
+{
+  // Ограничиваем напряжение диапазоном
+  if (voltage < voltageMin)
+  {
+    voltage = voltageMin;
+  }
+
+  if (voltage > voltageMax)
+  {
+    voltage = voltageMax;
+  }
+
+  // Преобразуем в проценты: (v - min) / (max - min) * 100
+  uint8_t percent = (voltage - voltageMin) / (voltageMax - voltageMin) * 100.0f;
+
+  // Ограничиваем от 0 до 100
+  if (percent < 0)
+  {
+    percent = 0;
+  }
+
+  if (percent > 100)
+  {
+    percent = 100;
+  }
+
+  return percent;
+}
+
+
 void DrawBme280Data(bmeData_t bmeData)
 {
   if (1 == bmeData.connectionOk)
@@ -277,22 +308,42 @@ void DrawBme280Data(bmeData_t bmeData)
     char hum_string[50];
     char press_string[50];
 
-    sprintf(temp_string, "Temperature: %03.1fC", bmeData.temperature);
-    sprintf(hum_string, "Humidity: %03.1f%%", bmeData.humidity);
-    sprintf(press_string, "Pressure: %03.1fmm", bmeData.pressure);
+    
+
+    // const uint8_t powerHeight = 149;
+    // const uint8_t batteryHeight = 169;
+    // const uint8_t rtcHeight = 189;
+    // const uint8_t barHeight = 10;
+
+    const float tempMax = 25.0f;
+    const float tempMin = 15.0f;
+
+    const float humMax = 50.0f;
+    const float humMin = 15.0f;
+
+    const float presMax = 770.0f;
+    const float presMin = 720.0f;
+
+    uint8_t tempPercent = ConvertToPercent(bmeData.temperature, tempMin, tempMax) / 2;
+    uint8_t humPercent = ConvertToPercent(bmeData.humidity, humMin, humMax) / 2;
+    uint8_t presPercent = ConvertToPercent(bmeData.pressure, presMin, presMax) / 2;
+
+    epd_paint_drawRectangle(125, 90, 140, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(125, 140 - tempPercent, 140, 140, EPD_COLOR_BLACK, 1);
+    
+    epd_paint_drawRectangle(150, 90, 165, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(150, 140 - humPercent, 165, 140, EPD_COLOR_BLACK, 1);
+
+    epd_paint_drawRectangle(175, 90, 190, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(175, 140 - presPercent, 190, 140, EPD_COLOR_BLACK, 1);
+
+    sprintf(temp_string, "Temperature:%03.1fC", bmeData.temperature);
+    sprintf(hum_string, "Humidity:%03.1f%%", bmeData.humidity);
+    sprintf(press_string, "Pressure:%03.1fmm", bmeData.pressure);
 
     epd_paint_showString(1, 90, temp_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
     epd_paint_showString(1, 110, hum_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
     epd_paint_showString(1, 130, press_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
-
-    const uint8_t powerHeight = 149;
-    const uint8_t batteryHeight = 169;
-    const uint8_t rtcHeight = 189;
-    const uint8_t barHeight = 10;
-
-    epd_paint_drawRectangle(125, 90, 140, 140, EPD_COLOR_BLACK, 0);
-    epd_paint_drawRectangle(150, 90, 165, 140, EPD_COLOR_BLACK, 0);
-    epd_paint_drawRectangle(175, 90, 190, 140, EPD_COLOR_BLACK, 0);
 
     // epd_paint_showString(105, powerHeight + 1, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
     // epd_paint_showString(105, batteryHeight + 1, batteryPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
@@ -409,36 +460,6 @@ voltageData_t GetVoltageData(adcData_t adcData)
   voltageData.rtcVoltage = ConvertToVoltage(adcData.rtcAdc, 0, 0);
 
   return voltageData;
-}
-
-uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
-{
-  // Ограничиваем напряжение диапазоном
-  if (voltage < voltageMin)
-  {
-    voltage = voltageMin;
-  }
-
-  if (voltage > voltageMax)
-  {
-    voltage = voltageMax;
-  }
-
-  // Преобразуем в проценты: (v - min) / (max - min) * 100
-  uint8_t percent = (voltage - voltageMin) / (voltageMax - voltageMin) * 100.0f;
-
-  // Ограничиваем от 0 до 100
-  if (percent < 0)
-  {
-    percent = 0;
-  }
-
-  if (percent > 100)
-  {
-    percent = 100;
-  }
-
-  return percent;
 }
 
 // Функция: Преобразование напряжения в проценты в заданном диапазоне
