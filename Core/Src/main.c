@@ -440,18 +440,24 @@ void DrawPowerData(percentData_t percentData, voltageData_t voltageData, adcData
   sprintf(batteryPercent, "BAT: %d%%(%0.2fV)", percentData.batteryPercent, voltageData.batteryVoltage);
   sprintf(rtcPercent, "RTC: %d%%(%0.2fV)", percentData.rtcPercent, voltageData.rtcVoltage);
 
-  epd_paint_showString(105, 146, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
-  epd_paint_showString(105, 166, batteryPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
-  epd_paint_showString(105, 186, rtcPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+  const uint8_t powerHeight = 149;
+  const uint8_t batteryHeight = 169;
+  const uint8_t rtcHeight = 189;
 
-  epd_paint_drawRectangle(1, 145, 100, 155, EPD_COLOR_BLACK, 0);
-  epd_paint_drawRectangle(1, 145, percentData.powerPercent, 155, EPD_COLOR_BLACK, 1);
+  const uint8_t barHeight = 10;
 
-  epd_paint_drawRectangle(1, 165, 100, 175, EPD_COLOR_BLACK, 0);
-  epd_paint_drawRectangle(1, 165, percentData.batteryPercent, 175, EPD_COLOR_BLACK, 1);
+  epd_paint_showString(105, powerHeight + 1, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+  epd_paint_showString(105, batteryHeight + 1, batteryPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
+  epd_paint_showString(105, rtcHeight + 1, rtcPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
 
-  epd_paint_drawRectangle(1, 185, 100, 195, EPD_COLOR_BLACK, 0);
-  epd_paint_drawRectangle(1, 185, percentData.rtcPercent, 195, EPD_COLOR_BLACK, 1);
+  epd_paint_drawRectangle(1, powerHeight, 100, powerHeight + barHeight, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, powerHeight, percentData.powerPercent, powerHeight + barHeight, EPD_COLOR_BLACK, 1);
+
+  epd_paint_drawRectangle(1, batteryHeight, 100, batteryHeight + barHeight, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, batteryHeight, percentData.batteryPercent, batteryHeight + barHeight, EPD_COLOR_BLACK, 1);
+
+  epd_paint_drawRectangle(1, rtcHeight, 100, rtcHeight + barHeight, EPD_COLOR_BLACK, 0);
+  epd_paint_drawRectangle(1, rtcHeight, percentData.rtcPercent, rtcHeight + barHeight, EPD_COLOR_BLACK, 1);
 }
 
 void SendDataToDisplay()
