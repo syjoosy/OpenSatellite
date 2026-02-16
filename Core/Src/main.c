@@ -260,13 +260,22 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   char week_string[50];
 
   sprintf(time_string, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
-  epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
-  sprintf(date_string, "Date: %02d/%02d/%02d", date.Date, date.Month, date.Year);
-  epd_paint_showString(1, 20, (uint8_t *)date_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  sprintf(date_string, "Date: %02d.%02d.%02d", date.Date, date.Month, date.Year);
+  epd_paint_showString(1, 25, (uint8_t *)date_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
-  sprintf(week_string, "Day: %02d", date.WeekDay);
-  epd_paint_showString(1, 40, (uint8_t *)week_string, EPD_FONT_SIZE16x8, EPD_COLOR_BLACK);
+  const char *weekDays[] = {
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+    };
+  sprintf(week_string, "Day: %s", weekDays[date.WeekDay]);
+  epd_paint_showString(1, 50, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 }
 
 uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
