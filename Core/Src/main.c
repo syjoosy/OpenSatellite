@@ -308,12 +308,10 @@ void DrawBme280Data(bmeData_t bmeData)
     char hum_string[50];
     char press_string[50];
 
-    
-
-    // const uint8_t powerHeight = 149;
-    // const uint8_t batteryHeight = 169;
-    // const uint8_t rtcHeight = 189;
-    // const uint8_t barHeight = 10;
+    const uint8_t tempWidthCord = 125;
+    const uint8_t humWidthCord = 150;
+    const uint8_t presWidthCord = 175;
+    const uint8_t barWidth = 15;
 
     const float tempMax = 25.0f;
     const float tempMin = 15.0f;
@@ -328,14 +326,14 @@ void DrawBme280Data(bmeData_t bmeData)
     uint8_t humPercent = ConvertToPercent(bmeData.humidity, humMin, humMax) / 2;
     uint8_t presPercent = ConvertToPercent(bmeData.pressure, presMin, presMax) / 2;
 
-    epd_paint_drawRectangle(125, 90, 140, 140, EPD_COLOR_BLACK, 0);
-    epd_paint_drawRectangle(125, 140 - tempPercent, 140, 140, EPD_COLOR_BLACK, 1);
+    epd_paint_drawRectangle(tempWidthCord, 90, tempWidthCord + barWidth, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(tempWidthCord, 140 - tempPercent, tempWidthCord + barWidth, 140, EPD_COLOR_BLACK, 1);
     
-    epd_paint_drawRectangle(150, 90, 165, 140, EPD_COLOR_BLACK, 0);
-    epd_paint_drawRectangle(150, 140 - humPercent, 165, 140, EPD_COLOR_BLACK, 1);
+    epd_paint_drawRectangle(humWidthCord, 90, humWidthCord + barWidth, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(humWidthCord, 140 - humPercent, humWidthCord + barWidth, 140, EPD_COLOR_BLACK, 1);
 
-    epd_paint_drawRectangle(175, 90, 190, 140, EPD_COLOR_BLACK, 0);
-    epd_paint_drawRectangle(175, 140 - presPercent, 190, 140, EPD_COLOR_BLACK, 1);
+    epd_paint_drawRectangle(presWidthCord, 90, presWidthCord + barWidth, 140, EPD_COLOR_BLACK, 0);
+    epd_paint_drawRectangle(presWidthCord, 140 - presPercent, presWidthCord + barWidth, 140, EPD_COLOR_BLACK, 1);
 
     sprintf(temp_string, "Temperature:%03.1fC", bmeData.temperature);
     sprintf(hum_string, "Humidity:%03.1f%%", bmeData.humidity);
