@@ -58,10 +58,121 @@
 #define VOLTAGE_VREF 3.3f
 
 #define ADC_CHANNEL_COUNT 3
+
+#define SCREEN_W 200
+#define SCREEN_H 200
+
+#define CELL_SIZE 5    // размер клетки в пикселях
+#define GAP       2     // расстояние между клетками в пикселях
+
+#define WIDTH  (SCREEN_W / (CELL_SIZE + GAP))
+#define HEIGHT (SCREEN_H / (CELL_SIZE + GAP))
+
+#define STEP (CELL_SIZE + GAP)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+// ------------------ 5x3 ------------------
+static const uint8_t digit_5x3[10][5][3] = {
+    // 0
+    {
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1}
+    },
+    // 1
+    {
+        {0,1,0},
+        {1,1,0},
+        {0,1,0},
+        {0,1,0},
+        {1,1,1}
+    },
+    // 2
+    {
+        {1,1,1},
+        {0,0,1},
+        {1,1,1},
+        {1,0,0},
+        {1,1,1}
+    },
+    // 3
+    {
+        {1,1,1},
+        {0,0,1},
+        {1,1,1},
+        {0,0,1},
+        {1,1,1}
+    },
+    // 4
+    {
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+        {0,0,1},
+        {0,0,1}
+    },
+    // 5
+    {
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+        {0,0,1},
+        {1,1,1}
+    },
+    // 6
+    {
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+        {1,0,1},
+        {1,1,1}
+    },
+    // 7
+    {
+        {1,1,1},
+        {0,0,1},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0}
+    },
+    // 8
+    {
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,1,1}
+    },
+    // 9
+    {
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+        {0,0,1},
+        {1,1,1}
+    }
+};
+// colon для 5x3 (две точки)
+static const uint8_t colon_5x3[5][3] = {
+    {0,0,0},
+    {0,1,0},
+    {0,0,0},
+    {0,1,0},
+    {0,0,0}
+};
+
+// colon для 5x3 (две точки)
+static const uint8_t colon2_5x3[5][3] = {
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,1,0}
+};
 
 /* USER CODE END PM */
 
@@ -253,6 +364,40 @@ RTC_TimeTypeDef GetTime()
   return time;
 }
 
+void draw_digit_5x3(int digit, int x, int y) {
+    //if (digit < 0 || digit > 9) return; // проверка
+
+	if (digit == -1)
+	{
+		for (int row = 0; row < 5; row++) {
+			for (int col = 0; col < 3; col++) {
+				int px1 = x + col * STEP;
+				int py1 = y + row * STEP;
+				int px2 = px1 + CELL_SIZE - 1;
+				int py2 = py1 + CELL_SIZE - 1;
+
+				if (colon_5x3[row][col]) {
+					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+				}
+			}
+		}
+		return;
+	}
+
+    for (int row = 0; row < 5; row++) {
+        for (int col = 0; col < 3; col++) {
+            int px1 = x + col * STEP;
+            int py1 = y + row * STEP;
+            int px2 = px1 + CELL_SIZE - 1;
+            int py2 = py1 + CELL_SIZE - 1;
+
+            if (digit_5x3[digit][row][col]) {
+                epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+            }
+        }
+    }
+}
+
 void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 {
   char time_string[50];
@@ -276,6 +421,79 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
     };
   sprintf(week_string, "%s", weekDays[date.WeekDay]);
   epd_paint_showString(1, 50, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
+
+  epd_paint_drawRectangle(25, 70, 175, 145, EPD_COLOR_BLACK, 1);
+
+	int hour_tens = data->hours / 10;  // получаем цифру десятков часов
+	int hour_ones = data->hours % 10;  // получаем цифру единиц часов
+
+	draw_digit_5x3(hour_tens, 40, 80);
+	draw_digit_5x3(hour_ones, 70, 80);
+
+	if (countToReloadDisplay == 0)
+	{
+		draw_digit_5x3(-1, 90, 80);
+		countToReloadDisplay = 1;
+	}
+	else
+	{
+		countToReloadDisplay = 0;	
+	}	
+
+	int minutes_tens = data->minutes / 10;  // получаем цифру десятков часов
+	int minutes_ones = data->minutes % 10;  // получаем цифру единиц часов
+
+	draw_digit_5x3(minutes_tens, 110, 80);
+	draw_digit_5x3(minutes_ones, 140, 80);
+
+	if (data->percent == 100)
+	{
+		draw_digit_5x3_2(1, 40, 120, 3, 1);
+		draw_digit_5x3_2(0, 55, 120, 3, 1);
+		draw_digit_5x3_2(0, 70, 120, 3, 1);
+	}
+	else
+	{
+		int percent_tens = data->percent / 10;  // получаем цифру десятков часов
+		int percent_ones = data->percent % 10;  // получаем цифру единиц часов
+
+		draw_digit_5x3_2(percent_tens, 40, 120, 3, 1);
+		draw_digit_5x3_2(percent_ones, 55, 120, 3, 1);
+	}
+	
+
+	// x = 40;
+	// y = 120;
+
+	// int squares = 1 + (percent * 16) / 100;
+	// for (int col = 0; col < squares; col++) {
+	// 	int px1 = x + col * STEP;
+	// 	int py1 = y + 0 * STEP;
+	// 	int px2 = px1 + CELL_SIZE - 1;
+	// 	int py2 = py1 + CELL_SIZE - 1;
+
+	// 	// if (colon_5x3[row][col]) {
+	// 	epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+	// 	// }
+	// }
+
+	// CELL_SIZE = 3;
+
+	int date_tens = data->day / 10;  // получаем цифру десятков часов
+	int date_ones = data->day % 10;  // получаем цифру единиц часов
+
+	draw_digit_5x3_2(date_tens, 100, 120, 3, 1);
+	draw_digit_5x3_2(date_ones, 115, 120, 3, 1);
+
+	int month_tens = data->month / 10;  // получаем цифру десятков часов
+	int month_ones = data->month % 10;  // получаем цифру единиц часов
+
+	// draw_digit_5x3_2(-1, 125, 130, 3, 1);
+
+	draw_digit_5x3_2(-2, 125, 120, 3, 1);
+
+	draw_digit_5x3_2(month_tens, 135, 120, 3, 1);
+	draw_digit_5x3_2(month_ones, 150, 120, 3, 1);
 }
 
 uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
