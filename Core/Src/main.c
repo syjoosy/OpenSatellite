@@ -378,7 +378,7 @@ void draw_digit_5x3(int digit, int x, int y) {
 				int py2 = py1 + CELL_SIZE - 1;
 
 				if (colon_5x3[row][col]) {
-					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
 				}
 			}
 		}
@@ -393,7 +393,7 @@ void draw_digit_5x3(int digit, int x, int y) {
             int py2 = py1 + CELL_SIZE - 1;
 
             if (digit_5x3[digit][row][col]) {
-                epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+                epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
             }
         }
     }
@@ -412,7 +412,7 @@ void draw_digit_5x3_2(int digit, int x, int y, int size, int gap) {
 				int py2 = py1 + size - 1;
 
 				if (colon_5x3[row][col]) {
-					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
 				}
 			}
 		}
@@ -429,7 +429,7 @@ void draw_digit_5x3_2(int digit, int x, int y, int size, int gap) {
 				int py2 = py1 + size - 1;
 
 				if (colon2_5x3[row][col]) {
-					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
 				}
 			}
 		}
@@ -474,13 +474,12 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   sprintf(week_string, "%s", weekDays[date.WeekDay]);
   epd_paint_showString(1, 50, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
-  epd_paint_drawRectangle(25, 70, 175, 145, EPD_COLOR_BLACK, 1);
+  // epd_paint_drawRectangle(25, 70, 175, 145, EPD_COLOR_BLACK, 1);
 
 	int hour_tens = time.Hours / 10;  // получаем цифру десятков часов
 	int hour_ones = time.Hours % 10;  // получаем цифру единиц часов
-
-	draw_digit_5x3(hour_tens, 40, 80);
-	draw_digit_5x3(hour_ones, 70, 80);
+	draw_digit_5x3(hour_tens, 10, 1);
+	draw_digit_5x3(hour_ones, 40, 1);
 
 	if (countToReloadDisplay == 0)
 	{
@@ -494,29 +493,11 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 
 	int minutes_tens = time.Minutes / 10;  // получаем цифру десятков часов
 	int minutes_ones = time.Minutes % 10;  // получаем цифру единиц часов
-
-	draw_digit_5x3(minutes_tens, 110, 80);
-	draw_digit_5x3(minutes_ones, 140, 80);
-
-	// if (data->percent == 100)
-	// {
-	// 	draw_digit_5x3_2(1, 40, 120, 3, 1);
-	// 	draw_digit_5x3_2(0, 55, 120, 3, 1);
-	// 	draw_digit_5x3_2(0, 70, 120, 3, 1);
-	// }
-	// else
-	// {
-	// 	int percent_tens = data->percent / 10;  // получаем цифру десятков часов
-	// 	int percent_ones = data->percent % 10;  // получаем цифру единиц часов
-
-	// 	draw_digit_5x3_2(percent_tens, 40, 120, 3, 1);
-	// 	draw_digit_5x3_2(percent_ones, 55, 120, 3, 1);
-	// }
-	
+	draw_digit_5x3(minutes_tens, 80, 1);
+	draw_digit_5x3(minutes_ones, 110, 1);
 
 	int date_tens = date.Date / 10;  // получаем цифру десятков часов
 	int date_ones = date.Date % 10;  // получаем цифру единиц часов
-
 	draw_digit_5x3_2(date_tens, 100, 120, 3, 1);
 	draw_digit_5x3_2(date_ones, 115, 120, 3, 1);
 
