@@ -581,8 +581,8 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   // sprintf(time_string, "%02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
   // epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
-  // sprintf(date_string, "%02d.%02d.%02d", date.Date, date.Month, date.Year);
-  // epd_paint_showString(1, 25, (uint8_t *)date_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
+  sprintf(date_string, "%02d.%02d", date.Date, date.Month);
+  epd_paint_showString(130, 60, (uint8_t *)date_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
   const char *weekDays[] = {
         "Sunday",
@@ -594,16 +594,16 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
         "Saturday"
     };
   sprintf(week_string, "%s", weekDays[date.WeekDay]);
-  epd_paint_showString(100, 50, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
+  epd_paint_showString(10, 58, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
 	int hour_tens = time.Hours / 10;  // получаем цифру десятков часов
 	int hour_ones = time.Hours % 10;  // получаем цифру единиц часов
-  draw_digit_7x5(hour_tens, 10, 1);
-  draw_digit_7x5(hour_ones, 55, 1);
+  draw_digit_7x5(hour_tens, 10, 10);
+  draw_digit_7x5(hour_ones, 55, 10);
 
 	if (countToReloadDisplay == 0)
 	{
-		draw_digit_5x3(-1, 90, 80);
+		draw_digit_5x3(-1, 85, 20);
 		countToReloadDisplay = 1;
 	}
 	else
@@ -613,27 +613,27 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 
 	int minutes_tens = time.Minutes / 10;  // получаем цифру десятков часов
 	int minutes_ones = time.Minutes % 10;  // получаем цифру единиц часов
-  draw_digit_7x5(minutes_tens, 110, 1);
-  draw_digit_7x5(minutes_ones, 155, 1);
+  draw_digit_7x5(minutes_tens, 110, 10);
+  draw_digit_7x5(minutes_ones, 155, 10);
 
-	int date_tens = date.Date / 10;  // получаем цифру десятков часов
-	int date_ones = date.Date % 10;  // получаем цифру единиц часов
-	// draw_digit_5x3_2(date_tens, 20, 60, 3, 1);
-	// draw_digit_5x3_2(date_ones, 35, 60, 3, 1);
-  draw_digit_5x3(date_tens, 10, 55);
-	draw_digit_5x3(date_ones, 35, 5);
+	// int date_tens = date.Date / 10;  // получаем цифру десятков часов
+	// int date_ones = date.Date % 10;  // получаем цифру единиц часов
+	// // draw_digit_5x3_2(date_tens, 20, 60, 3, 1);
+	// // draw_digit_5x3_2(date_ones, 35, 60, 3, 1);
+  // draw_digit_5x3(date_tens, 10, 55);
+	// draw_digit_5x3(date_ones, 35, 5);
 
-	int month_tens = date.Month / 10;  // получаем цифру десятков часов
-	int month_ones = date.Month % 10;  // получаем цифру единиц часов
+	// int month_tens = date.Month / 10;  // получаем цифру десятков часов
+	// int month_ones = date.Month % 10;  // получаем цифру единиц часов
 
-	// draw_digit_5x3_2(-1, 125, 130, 3, 1);
+	// // draw_digit_5x3_2(-1, 125, 130, 3, 1);
 
-	// draw_digit_5x3_2(-2, 50, 60, 3, 1);
+	// // draw_digit_5x3_2(-2, 50, 60, 3, 1);
 
-	// draw_digit_5x3_2(month_tens, 55, 60, 3, 1);
-	// draw_digit_5x3_2(month_ones, 70, 60, 3, 1);
-  draw_digit_5x3(month_tens, 70, 55);
-	draw_digit_5x3(month_ones, 95, 55);
+	// // draw_digit_5x3_2(month_tens, 55, 60, 3, 1);
+	// // draw_digit_5x3_2(month_ones, 70, 60, 3, 1);
+  // draw_digit_5x3(month_tens, 70, 55);
+	// draw_digit_5x3(month_ones, 95, 55);
 
   // draw_digit_7x5(1, 150, 1);
 }
@@ -1168,24 +1168,24 @@ static void MX_RTC_Init(void)
   /** Initialize RTC and set the Time and Date
   */
   sTime.Hours = 0x21;
-  sTime.Minutes = 0x38;
+  sTime.Minutes = 0x42;
   sTime.Seconds = 0x0;
   sTime.SubSeconds = 0x0;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sDate.WeekDay = RTC_WEEKDAY_FRIDAY;
+  // if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
+  sDate.WeekDay = RTC_WEEKDAY_TUESDAY;
   sDate.Month = RTC_MONTH_FEBRUARY;
-  sDate.Date = 0x20;
+  sDate.Date = 0x25;
   sDate.Year = 0x26;
 
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  // if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
 
   /** Enable the WakeUp
   */
