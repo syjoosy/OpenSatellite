@@ -275,7 +275,7 @@ static const uint8_t digit_7x5[10][7][5] = {
         {0,1,1,1,1},
         {0,0,0,0,1},
         {0,0,0,0,1},
-        {1,1,1,1,0}
+        {0,1,1,1,0}
     }
 };
 
@@ -549,7 +549,7 @@ void draw_digit_5x3_2(int digit, int x, int y, int size, int gap) {
             int py2 = py1 + size - 1;
 
             if (digit_5x3[digit][row][col]) {
-                epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_WHITE, 1);
+                epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
             }
         }
     }
@@ -594,16 +594,12 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
         "Saturday"
     };
   sprintf(week_string, "%s", weekDays[date.WeekDay]);
-  epd_paint_showString(1, 50, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
-
-  // epd_paint_drawRectangle(25, 70, 175, 145, EPD_COLOR_BLACK, 1);
+  epd_paint_showString(100, 50, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
 	int hour_tens = time.Hours / 10;  // получаем цифру десятков часов
 	int hour_ones = time.Hours % 10;  // получаем цифру единиц часов
   draw_digit_7x5(hour_tens, 10, 1);
   draw_digit_7x5(hour_ones, 55, 1);
-	// draw_digit_5x3(hour_tens, 10, 1);
-	// draw_digit_5x3(hour_ones, 40, 1);
 
 	if (countToReloadDisplay == 0)
 	{
@@ -619,23 +615,25 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 	int minutes_ones = time.Minutes % 10;  // получаем цифру единиц часов
   draw_digit_7x5(minutes_tens, 110, 1);
   draw_digit_7x5(minutes_ones, 155, 1);
-	// draw_digit_5x3(minutes_tens, 80, 1);
-	// draw_digit_5x3(minutes_ones, 110, 1);
 
 	int date_tens = date.Date / 10;  // получаем цифру десятков часов
 	int date_ones = date.Date % 10;  // получаем цифру единиц часов
-	draw_digit_5x3_2(date_tens, 100, 120, 3, 1);
-	draw_digit_5x3_2(date_ones, 115, 120, 3, 1);
+	// draw_digit_5x3_2(date_tens, 20, 60, 3, 1);
+	// draw_digit_5x3_2(date_ones, 35, 60, 3, 1);
+  draw_digit_5x3(date_tens, 10, 55);
+	draw_digit_5x3(date_ones, 35, 5);
 
 	int month_tens = date.Month / 10;  // получаем цифру десятков часов
 	int month_ones = date.Month % 10;  // получаем цифру единиц часов
 
 	// draw_digit_5x3_2(-1, 125, 130, 3, 1);
 
-	draw_digit_5x3_2(-2, 125, 120, 3, 1);
+	// draw_digit_5x3_2(-2, 50, 60, 3, 1);
 
-	draw_digit_5x3_2(month_tens, 135, 120, 3, 1);
-	draw_digit_5x3_2(month_ones, 150, 120, 3, 1);
+	// draw_digit_5x3_2(month_tens, 55, 60, 3, 1);
+	// draw_digit_5x3_2(month_ones, 70, 60, 3, 1);
+  draw_digit_5x3(month_tens, 70, 55);
+	draw_digit_5x3(month_ones, 95, 55);
 
   // draw_digit_7x5(1, 150, 1);
 }
