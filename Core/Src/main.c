@@ -582,7 +582,7 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   // epd_paint_showString(1, 1, (uint8_t *)time_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
   sprintf(date_string, "%02d.%02d", date.Date, date.Month);
-  epd_paint_showString(130, 60, (uint8_t *)date_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
+  epd_paint_showString(125, 60, (uint8_t *)date_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
   const char *weekDays[] = {
         "Sunday",
@@ -615,27 +615,6 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 	int minutes_ones = time.Minutes % 10;  // получаем цифру единиц часов
   draw_digit_7x5(minutes_tens, 110, 10);
   draw_digit_7x5(minutes_ones, 155, 10);
-
-	// int date_tens = date.Date / 10;  // получаем цифру десятков часов
-	// int date_ones = date.Date % 10;  // получаем цифру единиц часов
-	// // draw_digit_5x3_2(date_tens, 20, 60, 3, 1);
-	// // draw_digit_5x3_2(date_ones, 35, 60, 3, 1);
-  // draw_digit_5x3(date_tens, 10, 55);
-	// draw_digit_5x3(date_ones, 35, 5);
-
-	// int month_tens = date.Month / 10;  // получаем цифру десятков часов
-	// int month_ones = date.Month % 10;  // получаем цифру единиц часов
-
-	// // draw_digit_5x3_2(-1, 125, 130, 3, 1);
-
-	// // draw_digit_5x3_2(-2, 50, 60, 3, 1);
-
-	// // draw_digit_5x3_2(month_tens, 55, 60, 3, 1);
-	// // draw_digit_5x3_2(month_ones, 70, 60, 3, 1);
-  // draw_digit_5x3(month_tens, 70, 55);
-	// draw_digit_5x3(month_ones, 95, 55);
-
-  // draw_digit_7x5(1, 150, 1);
 }
 
 uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
