@@ -174,6 +174,111 @@ static const uint8_t colon2_5x3[5][3] = {
     {0,1,0}
 };
 
+
+// ------------------ 7x5 ------------------
+static const uint8_t digit_7x5[10][7][5] = {
+    // 0
+    {
+        {0,1,1,1,0},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,0}
+    },
+    // 1
+    {
+        {0,0,1,0,0},
+        {0,1,1,0,0},
+        {1,0,1,0,0},
+        {0,0,1,0,0},
+        {0,0,1,0,0},
+        {0,0,1,0,0},
+        {1,1,1,1,1}
+    },
+    // 2
+    {
+        {0,1,1,1,0},
+        {1,0,0,0,1},
+        {0,0,0,0,1},
+        {0,0,0,1,0},
+        {0,0,1,0,0},
+        {0,1,0,0,0},
+        {1,1,1,1,1}
+    },
+    // 3
+    {
+        {0,1,1,1,0},
+        {1,0,0,0,1},
+        {0,0,0,0,1},
+        {0,0,1,1,0},
+        {0,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,0}
+    },
+    // 4
+    {
+        {0,0,0,1,0},
+        {0,0,1,1,0},
+        {0,1,0,1,0},
+        {1,0,0,1,0},
+        {1,1,1,1,1},
+        {0,0,0,1,0},
+        {0,0,0,1,0}
+    },
+    // 5
+    {
+        {1,1,1,1,1},
+        {1,0,0,0,0},
+        {1,1,1,1,0},
+        {0,0,0,0,1},
+        {0,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,0}
+    },
+    // 6
+    {
+        {0,0,1,1,0},
+        {0,1,0,0,0},
+        {1,0,0,0,0},
+        {1,1,1,1,0},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,0}
+    },
+    // 7
+    {
+        {1,1,1,1,1},
+        {0,0,0,0,1},
+        {0,0,0,1,0},
+        {0,0,1,0,0},
+        {0,1,0,0,0},
+        {0,1,0,0,0},
+        {0,1,0,0,0}
+    },
+    // 8
+    {
+        {0,1,1,1,0},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,0},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,0}
+    },
+    // 9
+    {
+        {0,1,1,1,0},
+        {1,0,0,0,1},
+        {1,0,0,0,1},
+        {0,1,1,1,1},
+        {0,0,0,0,1},
+        {0,0,0,0,1},
+        {1,1,1,1,0}
+    }
+};
+
 int countToReloadDisplay = 0;
 /* USER CODE END PM */
 
@@ -450,6 +555,23 @@ void draw_digit_5x3_2(int digit, int x, int y, int size, int gap) {
     }
 }
 
+void draw_digit_7x5(int digit, int x, int y) {
+    if (digit < 0 || digit > 9) return;
+
+    for (int row = 0; row < 7; row++) {
+        for (int col = 0; col < 5; col++) {
+            int px1 = x + col * STEP;
+            int py1 = y + row * STEP;
+            int px2 = px1 + CELL_SIZE - 1;
+            int py2 = py1 + CELL_SIZE - 1;
+
+            if (digit_7x5[digit][row][col]) {
+                epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
+            } 
+        }
+    }
+}
+
 void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 {
   char time_string[50];
@@ -478,8 +600,10 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 
 	int hour_tens = time.Hours / 10;  // получаем цифру десятков часов
 	int hour_ones = time.Hours % 10;  // получаем цифру единиц часов
-	draw_digit_5x3(hour_tens, 10, 1);
-	draw_digit_5x3(hour_ones, 40, 1);
+  draw_digit_7x5(hour_tens, 10, 1);
+  draw_digit_7x5(hour_ones, 55, 1);
+	// draw_digit_5x3(hour_tens, 10, 1);
+	// draw_digit_5x3(hour_ones, 40, 1);
 
 	if (countToReloadDisplay == 0)
 	{
@@ -493,8 +617,10 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 
 	int minutes_tens = time.Minutes / 10;  // получаем цифру десятков часов
 	int minutes_ones = time.Minutes % 10;  // получаем цифру единиц часов
-	draw_digit_5x3(minutes_tens, 80, 1);
-	draw_digit_5x3(minutes_ones, 110, 1);
+  draw_digit_7x5(minutes_tens, 110, 1);
+  draw_digit_7x5(minutes_ones, 155, 1);
+	// draw_digit_5x3(minutes_tens, 80, 1);
+	// draw_digit_5x3(minutes_ones, 110, 1);
 
 	int date_tens = date.Date / 10;  // получаем цифру десятков часов
 	int date_ones = date.Date % 10;  // получаем цифру единиц часов
@@ -510,6 +636,8 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
 
 	draw_digit_5x3_2(month_tens, 135, 120, 3, 1);
 	draw_digit_5x3_2(month_ones, 150, 120, 3, 1);
+
+  // draw_digit_7x5(1, 150, 1);
 }
 
 uint8_t ConvertToPercent(float voltage, float voltageMin, float voltageMax)
