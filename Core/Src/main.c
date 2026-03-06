@@ -43,15 +43,15 @@
 #define R2_BATTERY 3300 // Ом (нижний резистор)
 
 // Диапазон напряжений для преобразования в проценты
-#define BATTERY_VOLTAGE_MIN 3.0f // Минимальное напряжение в диапазоне (В)
+#define BATTERY_VOLTAGE_MIN 3.1f // Минимальное напряжение в диапазоне (В)
 #define BATTERY_VOLTAGE_MAX 4.1f // Максимальное напряжение в диапазоне (В)
 
 // Диапазон напряжений для преобразования в проценты
 #define POWER_VOLTAGE_MIN 3.5f // Минимальное напряжение в диапазоне (В)
-#define POWER_VOLTAGE_MAX 5.5f // Максимальное напряжение в диапазоне (В)
+#define POWER_VOLTAGE_MAX 5.0f // Максимальное напряжение в диапазоне (В)
 
 // Диапазон напряжений для преобразования в проценты
-#define RTC_VOLTAGE_MIN 2.0f // Минимальное напряжение в диапазоне (В)
+#define RTC_VOLTAGE_MIN 2.1f // Минимальное напряжение в диапазоне (В)
 #define RTC_VOLTAGE_MAX 3.0f // Максимальное напряжение в диапазоне (В)
 
 #define ADC_MAX_VALUE 4095.0f
@@ -502,19 +502,6 @@ void DrawBme280Data(bmeData_t bmeData)
     epd_paint_showString(1, 90, temp_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
     epd_paint_showString(1, 110, hum_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
     epd_paint_showString(1, 130, press_string, EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
-
-    // epd_paint_showString(105, powerHeight + 1, powerPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
-    // epd_paint_showString(105, batteryHeight + 1, batteryPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
-    // epd_paint_showString(105, rtcHeight + 1, rtcPercent, EPD_FONT_SIZE8x6, EPD_COLOR_BLACK);
-
-    // epd_paint_drawRectangle(1, powerHeight, 100, powerHeight + barHeight, EPD_COLOR_BLACK, 0);
-    // epd_paint_drawRectangle(1, powerHeight, percentData.powerPercent, powerHeight + barHeight, EPD_COLOR_BLACK, 1);
-
-    // epd_paint_drawRectangle(1, batteryHeight, 100, batteryHeight + barHeight, EPD_COLOR_BLACK, 0);
-    // epd_paint_drawRectangle(1, batteryHeight, percentData.batteryPercent, batteryHeight + barHeight, EPD_COLOR_BLACK, 1);
-
-    // epd_paint_drawRectangle(1, rtcHeight, 100, rtcHeight + barHeight, EPD_COLOR_BLACK, 0);
-    // epd_paint_drawRectangle(1, rtcHeight, percentData.rtcPercent, rtcHeight + barHeight, EPD_COLOR_BLACK, 1);
   }
   else
   {
