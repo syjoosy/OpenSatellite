@@ -47,7 +47,7 @@
 #define BATTERY_VOLTAGE_MAX 4.1f // Максимальное напряжение в диапазоне (В)
 
 // Диапазон напряжений для преобразования в проценты
-#define POWER_VOLTAGE_MIN 3.5f // Минимальное напряжение в диапазоне (В)
+#define POWER_VOLTAGE_MIN 0.5f // Минимальное напряжение в диапазоне (В)
 #define POWER_VOLTAGE_MAX 5.0f // Максимальное напряжение в диапазоне (В)
 
 // Диапазон напряжений для преобразования в проценты
@@ -166,6 +166,15 @@ static const uint8_t digit_7x5[10][7][5] = {
         {0, 0, 0, 0, 1},
         {0, 0, 0, 0, 1},
         {0, 1, 1, 1, 0}}};
+
+        // colon для 5x3 (две точки)
+static const uint8_t colon_5x3[5][3] = {
+    {0,0,0},
+    {0,1,0},
+    {0,0,0},
+    {0,1,0},
+    {0,0,0}
+};
 
 int countToReloadDisplay = 0;
 /* USER CODE END PM */
@@ -356,6 +365,27 @@ RTC_TimeTypeDef GetTime()
   RTC_TimeTypeDef time;
   HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
   return time;
+}
+
+void draw_digit_5x3(int digit, int x, int y) {
+    //if (digit < 0 || digit > 9) return; // проверка
+
+	if (digit == -1)
+	{
+		for (int row = 0; row < 5; row++) {
+			for (int col = 0; col < 3; col++) {
+				int px1 = x + col * STEP;
+				int py1 = y + row * STEP;
+				int px2 = px1 + CELL_SIZE - 1;
+				int py2 = py1 + CELL_SIZE - 1;
+
+				if (colon_5x3[row][col]) {
+					epd_paint_drawRectangle(px1, py1, px2, py2, EPD_COLOR_BLACK, 1);
+				}
+			}
+		}
+		return;
+	}
 }
 
 void draw_digit_7x5(int digit, int x, int y)
