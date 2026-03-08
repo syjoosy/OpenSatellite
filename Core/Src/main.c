@@ -420,22 +420,17 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   epd_paint_showString(125, 60, (uint8_t *)date_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
   const char *weekDays[] = {
-      "Sunday",
+      "",
       "Monday",
       "Tuesday",
       "Wednesday",
       "Thursday",
       "Friday",
-      "Saturday"};
+      "Saturday",
+      "Sunday"
+  };
 
-  if (date.WeekDay >= 0 && date.WeekDay <= 6)
-  {
-    sprintf(week_string, "%s", weekDays[date.WeekDay]);
-  }
-  else
-  {
-    sprintf(week_string, "???(%d)", date.WeekDay);
-  }
+  sprintf(week_string, "%s", weekDays[date.WeekDay]); 
 
   epd_paint_showString(10, 58, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
 
