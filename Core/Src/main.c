@@ -434,7 +434,7 @@ void DrawDateTime(RTC_DateTypeDef date, RTC_TimeTypeDef time)
   }
   else
   {
-    sprintf(week_string, "Unknown (%d)", date.WeekDay);
+    sprintf(week_string, "???(%d)", date.WeekDay);
   }
 
   epd_paint_showString(10, 58, (uint8_t *)week_string, EPD_FONT_SIZE24x12, EPD_COLOR_BLACK);
@@ -619,7 +619,16 @@ float ConvertToVoltage(uint32_t adcValue, float resistor1, float resistor2)
     // Восстанавливаем исходное напряжение до делителя:
     // V_in = V_adc * (1 + R1/R2)
     // 0.07 - поправка для корректности данных
-    voltage = adcVoltage * (1.0f + resistor1 / resistor2) + 0.07f;
+
+    if (0 == adcVoltage) 
+    {
+      voltage = adcVoltage * (1.0f + resistor1 / resistor2);
+    }
+    else
+    {
+      voltage = adcVoltage * (1.0f + resistor1 / resistor2) + 0.07f;
+    }
+    
   }
 
   return voltage;
