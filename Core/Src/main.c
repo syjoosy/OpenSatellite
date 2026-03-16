@@ -59,17 +59,6 @@
 #define VOLTAGE_VREF 3.3f
 
 #define ADC_CHANNEL_COUNT 3
-
-#define SCREEN_W 200
-#define SCREEN_H 200
-
-#define CELL_SIZE 5 // размер клетки в пикселях
-#define GAP 2       // расстояние между клетками в пикселях
-
-#define WIDTH (SCREEN_W / (CELL_SIZE + GAP))
-#define HEIGHT (SCREEN_H / (CELL_SIZE + GAP))
-
-#define STEP (CELL_SIZE + GAP)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/

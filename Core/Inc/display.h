@@ -1,3 +1,14 @@
+#define SCREEN_W 200
+#define SCREEN_H 200
+
+#define CELL_SIZE 5 // размер клетки в пикселях
+#define GAP 2       // расстояние между клетками в пикселях
+
+#define WIDTH (SCREEN_W / (CELL_SIZE + GAP))
+#define HEIGHT (SCREEN_H / (CELL_SIZE + GAP))
+
+#define STEP (CELL_SIZE + GAP)
+
 // ------------------ 7x5 ------------------
 static const uint8_t digit_7x5[10][7][5] = {
 // 0
