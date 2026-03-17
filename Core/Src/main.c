@@ -59,6 +59,15 @@
 #define VOLTAGE_VREF 3.3f
 
 #define ADC_CHANNEL_COUNT 3
+
+#define TEMPERATURE_MAX 25.0f
+#define TEMPERATURE_MIN 15.0f
+
+#define HUMIDITY_MAX 50.0f
+#define HUMIDITY_MIN 15.0f
+
+#define PRESSURE_MAX 770.0f
+#define PRESSURE_MIN 720.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -350,18 +359,9 @@ void DrawBme280Data(bmeData_t bmeData)
     const uint8_t presWidthCord = 175;
     const uint8_t barWidth = 15;
 
-    const float tempMax = 25.0f;
-    const float tempMin = 15.0f;
-
-    const float humMax = 50.0f;
-    const float humMin = 15.0f;
-
-    const float presMax = 770.0f;
-    const float presMin = 720.0f;
-
-    uint8_t tempPercent = ConvertToPercent(bmeData.temperature, tempMin, tempMax) / 2;
-    uint8_t humPercent = ConvertToPercent(bmeData.humidity, humMin, humMax) / 2;
-    uint8_t presPercent = ConvertToPercent(bmeData.pressure, presMin, presMax) / 2;
+    uint8_t tempPercent = ConvertToPercent(bmeData.temperature, TEMPERATURE_MIN, TEMPERATURE_MAX) / 2;
+    uint8_t humPercent = ConvertToPercent(bmeData.humidity, HUMIDITY_MIN, HUMIDITY_MAX) / 2;
+    uint8_t presPercent = ConvertToPercent(bmeData.pressure, PRESSURE_MIN, PRESSURE_MAX) / 2;
 
     epd_paint_drawRectangle(tempWidthCord, 90, tempWidthCord + barWidth, 140, EPD_COLOR_BLACK, 0);
     epd_paint_drawRectangle(tempWidthCord, 140 - tempPercent, tempWidthCord + barWidth, 140, EPD_COLOR_BLACK, 1);
