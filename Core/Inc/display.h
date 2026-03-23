@@ -1,3 +1,6 @@
+#include "stdint.h"
+#include "epaper.h"
+
 #define SCREEN_W 200
 #define SCREEN_H 200
 
@@ -112,7 +115,7 @@ static const uint8_t colon_5x3[5][3] = {
     {0,0,0}
 };
 
-int countToReloadDisplay = 0;
+extern int countToReloadDisplay;
 
 void draw_digit_5x3(int digit, int x, int y);
 void draw_digit_7x5(int digit, int x, int y);

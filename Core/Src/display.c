@@ -1,4 +1,5 @@
-
+#include "display.h"
+int countToReloadDisplay = 0;
 void draw_digit_5x3(int digit, int x, int y) 
 {
     //if (digit < 0 || digit > 9) return; // проверка
